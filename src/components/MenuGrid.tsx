@@ -33,7 +33,7 @@ export default function MenuGrid() {
             className="group relative rounded-lg overflow-hidden bg-card border border-border hover:border-gold/30 transition-all duration-300 animate-fade-in"
             style={{ animationDelay: `${i * 60}ms` }}
           >
-            {item.is_placeholder && isAdmin ? (
+            {item.is_placeholder ? (isAdmin ? (
               <button
                 onClick={() => setEditingItem(item)}
                 className="w-full h-64 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:text-gold transition-colors"
