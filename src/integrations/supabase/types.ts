@@ -14,7 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      menu_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_placeholder: boolean
+          name: string
+          price: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_placeholder?: boolean
+          name?: string
+          price?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_placeholder?: boolean
+          name?: string
+          price?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      restaurant_settings: {
+        Row: {
+          business_address: string | null
+          business_name: string
+          business_phone: string | null
+          created_at: string
+          header_image_url: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          business_address?: string | null
+          business_name?: string
+          business_phone?: string | null
+          created_at?: string
+          header_image_url?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          business_address?: string | null
+          business_name?: string
+          business_phone?: string | null
+          created_at?: string
+          header_image_url?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
