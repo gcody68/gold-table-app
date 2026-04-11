@@ -28,12 +28,13 @@ export default function MenuGrid() {
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {items?.map((item, i) => (
+          {item.is_placeholder && !isAdmin ? null : (
           <div
             key={item.id}
             className="group relative rounded-lg overflow-hidden bg-card border border-border hover:border-gold/30 transition-all duration-300 animate-fade-in"
             style={{ animationDelay: `${i * 60}ms` }}
           >
-            {item.is_placeholder ? (isAdmin ? (
+            {item.is_placeholder && isAdmin ? (
               <button
                 onClick={() => setEditingItem(item)}
                 className="w-full h-64 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:text-gold transition-colors"
@@ -41,7 +42,7 @@ export default function MenuGrid() {
                 <Plus className="w-10 h-10" />
                 <span className="text-sm font-medium">Add Menu Item</span>
               </button>
-            ) : item.is_placeholder ? null : (
+            ) : !item.is_placeholder ? (
               <div
                 className="cursor-default"
                 onClick={() => isAdmin && setEditingItem(item)}
