@@ -7,6 +7,8 @@ import { uploadImage } from "@/hooks/useImageUpload";
 import { toast } from "sonner";
 import { Save, ImagePlus, Loader2, X } from "lucide-react";
 import { useAdmin } from "@/contexts/AdminContext";
+import ThemeSelector from "@/components/ThemeSelector";
+import { type ThemeId, applyTheme, getThemeById } from "@/lib/themes";
 
 export default function AdminPanel() {
   const { data: settings } = useRestaurantSettings();
@@ -17,6 +19,7 @@ export default function AdminPanel() {
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [headerUrl, setHeaderUrl] = useState("");
+  const [theme, setTheme] = useState<ThemeId>("midnight-gold");
   const [uploading, setUploading] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -26,8 +29,14 @@ export default function AdminPanel() {
     setAddress(settings.business_address || "");
     setPhone(settings.business_phone || "");
     setHeaderUrl(settings.header_image_url || "");
+    setTheme((settings.theme as ThemeId) || "midnight-gold");
     setInitialized(true);
   }
+
+  const handleThemeChange = (id: ThemeId) => {
+    setTheme(id);
+    applyTheme(getThemeById(id));
+  };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -52,6 +61,7 @@ export default function AdminPanel() {
         business_address: address,
         business_phone: phone,
         header_image_url: headerUrl || null,
+        theme,
       });
       toast.success("Settings saved!");
     } catch {
@@ -92,10 +102,10 @@ export default function AdminPanel() {
           <Label className="text-muted-foreground text-xs">Header Image</Label>
           <div
             onClick={() => fileRef.current?.click()}
-            className="mt-1 h-32 rounded-lg bg-secondary border-2 border-dashed border-border hover:border-gold/40 cursor-pointer flex items-center justify-center overflow-hidden transition-colors"
+            className="mt-1 h-32 rounded-lg bg-secondary border-2 border-dashed border-border hover:border-primary/40 cursor-pointer flex items-center justify-center overflow-hidden transition-colors"
           >
             {uploading ? (
-              <Loader2 className="w-6 h-6 text-gold animate-spin" />
+              <Loader2 className="w-6 h-6 text-primary animate-spin" />
             ) : headerUrl ? (
               <img src={headerUrl} alt="Header" className="w-full h-full object-cover" />
             ) : (
@@ -107,6 +117,9 @@ export default function AdminPanel() {
           </div>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
         </div>
+
+        <div className="border-b border-border pb-2" />
+        <ThemeSelector value={theme} onChange={handleThemeChange} />
 
         <Button
           onClick={handleSave}

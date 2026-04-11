@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdminProvider, useAdmin } from "@/contexts/AdminContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { useRestaurantSettings } from "@/hooks/useRestaurantSettings";
+import { applyTheme, getThemeById } from "@/lib/themes";
 import AppNavbar from "@/components/AppNavbar";
 import HeroSection from "@/components/HeroSection";
 import MenuGrid from "@/components/MenuGrid";
@@ -11,6 +13,13 @@ import CartFAB from "@/components/CartFAB";
 function AppContent() {
   const { isAdmin } = useAdmin();
   const [showAdmin, setShowAdmin] = useState(false);
+  const { data: settings } = useRestaurantSettings();
+
+  useEffect(() => {
+    if (settings?.theme) {
+      applyTheme(getThemeById(settings.theme));
+    }
+  }, [settings?.theme]);
 
   return (
     <div className="min-h-screen bg-background">
