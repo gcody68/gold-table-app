@@ -1,13 +1,22 @@
 import { useMenuItems, type MenuItem } from "@/hooks/useMenuItems";
 import { useAdmin } from "@/contexts/AdminContext";
-import { Plus, UtensilsCrossed } from "lucide-react";
+import { useCart } from "@/contexts/CartContext";
+import { Plus, UtensilsCrossed, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 import MenuItemModal from "./MenuItemModal";
+import { toast } from "sonner";
 
 export default function MenuGrid() {
   const { data: items, isLoading } = useMenuItems();
   const { isAdmin } = useAdmin();
+  const { addItem } = useCart();
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+
+  const handleAddToCart = (e: React.MouseEvent, item: MenuItem) => {
+    e.stopPropagation();
+    addItem(item);
+    toast.success(`${item.name} added to order`);
+  };
 
   if (isLoading) {
     return (
@@ -82,6 +91,14 @@ export default function MenuGrid() {
                   <p className="text-muted-foreground text-sm leading-relaxed">
                     {item.description}
                   </p>
+                )}
+                {!isAdmin && (
+                  <button
+                    onClick={(e) => handleAddToCart(e, item)}
+                    className="w-full gradient-gold text-primary-foreground font-semibold py-2.5 text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                  >
+                    <ShoppingBag className="w-4 h-4" /> Add to Order
+                  </button>
                 )}
               </div>
               {isAdmin && (
