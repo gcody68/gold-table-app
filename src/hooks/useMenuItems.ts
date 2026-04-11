@@ -9,7 +9,10 @@ export type MenuItem = {
   image_url: string | null;
   sort_order: number;
   is_placeholder: boolean;
+  category: string;
 };
+
+export const CATEGORIES = ["Mains", "Sides", "Drinks"] as const;
 
 export function useMenuItems() {
   return useQuery({
@@ -22,6 +25,20 @@ export function useMenuItems() {
       if (error) throw error;
       return data as MenuItem[];
     },
+  });
+}
+
+export function useCreateMenuItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (item: { name: string; description: string; price: number; image_url: string | null; category: string }) => {
+      const { error } = await supabase.from("menu_items").insert({
+        ...item,
+        is_placeholder: false,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["menu-items"] }),
   });
 }
 
