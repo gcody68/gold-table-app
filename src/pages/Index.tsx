@@ -1,16 +1,31 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import { AdminProvider, useAdmin } from "@/contexts/AdminContext";
+import AppNavbar from "@/components/AppNavbar";
+import HeroSection from "@/components/HeroSection";
+import MenuGrid from "@/components/MenuGrid";
+import AdminPanel from "@/components/AdminPanel";
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+function AppContent() {
+  const { isAdmin } = useAdmin();
+  const [showAdmin, setShowAdmin] = useState(false);
+
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
+    <div className="min-h-screen bg-background">
+      <AppNavbar showAdmin={showAdmin} onToggleAdmin={() => setShowAdmin(!showAdmin)} />
+      {isAdmin && showAdmin && <AdminPanel />}
+      <HeroSection />
+      <MenuGrid />
+      <footer className="border-t border-border py-8 text-center text-muted-foreground text-xs">
+        &copy; {new Date().getFullYear()} · Powered by love for great food
+      </footer>
     </div>
   );
-};
+}
 
-const Index = PlaceholderIndex;
-
-export default Index;
+export default function Index() {
+  return (
+    <AdminProvider>
+      <AppContent />
+    </AdminProvider>
+  );
+}
