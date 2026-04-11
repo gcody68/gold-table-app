@@ -1,0 +1,1 @@
+ALTER TABLE public.restaurant_settings ADD COLUMN theme text NOT NULL DEFAULT 'midnight-gold';

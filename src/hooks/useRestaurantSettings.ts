@@ -7,6 +7,7 @@ export type RestaurantSettings = {
   business_address: string | null;
   business_phone: string | null;
   header_image_url: string | null;
+  theme: string;
 };
 
 export function useRestaurantSettings() {
