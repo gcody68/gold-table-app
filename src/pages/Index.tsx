@@ -31,6 +31,7 @@ function AppContent() {
       {isAdmin && showAdmin && <AdminPanel />}
       <HeroSection />
       <MenuGrid />
+      <ProfitCalculator />
       <CartFAB />
       <CartSidebar />
       <footer className="border-t border-border py-8 text-center space-y-4">
