@@ -7,6 +7,7 @@ import AppNavbar from "@/components/AppNavbar";
 import HeroSection from "@/components/HeroSection";
 import MenuGrid from "@/components/MenuGrid";
 import AdminPanel from "@/components/AdminPanel";
+import ProfitCalculator from "@/components/ProfitCalculator";
 import CartSidebar from "@/components/CartSidebar";
 import CartFAB from "@/components/CartFAB";
 import AdminLoginModal from "@/components/AdminLoginModal";
