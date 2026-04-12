@@ -5,15 +5,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { uploadImage } from "@/hooks/useImageUpload";
 import { toast } from "sonner";
-import { Save, ImagePlus, Loader2, X } from "lucide-react";
+import { Save, ImagePlus, Loader2, X, Trash2 } from "lucide-react";
 import { useAdmin } from "@/contexts/AdminContext";
 import ThemeSelector from "@/components/ThemeSelector";
 import { type ThemeId, applyTheme, getThemeById } from "@/lib/themes";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { STARTER_ITEMS } from "@/components/StarterContent";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function AdminPanel() {
   const { data: settings } = useRestaurantSettings();
   const update = useUpdateSettings();
   const { logout } = useAdmin();
+  const qc = useQueryClient();
 
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
@@ -21,6 +36,7 @@ export default function AdminPanel() {
   const [headerUrl, setHeaderUrl] = useState("");
   const [theme, setTheme] = useState<ThemeId>("midnight-gold");
   const [uploading, setUploading] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -66,6 +82,33 @@ export default function AdminPanel() {
       toast.success("Settings saved!");
     } catch {
       toast.error("Failed to save settings");
+    }
+  };
+
+  const handleClearDemo = async () => {
+    setClearing(true);
+    try {
+      await supabase.from("menu_items").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      qc.invalidateQueries({ queryKey: ["menu-items"] });
+      toast.success("Demo data cleared! Start adding your own items.");
+    } catch {
+      toast.error("Failed to clear data");
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  const handleSeedDemo = async () => {
+    try {
+      const items = STARTER_ITEMS.map((item) => ({
+        ...item,
+        is_placeholder: false,
+      }));
+      await supabase.from("menu_items").insert(items);
+      qc.invalidateQueries({ queryKey: ["menu-items"] });
+      toast.success("Demo items added!");
+    } catch {
+      toast.error("Failed to seed demo data");
     }
   };
 
@@ -128,6 +171,39 @@ export default function AdminPanel() {
         >
           {update.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-2" /> Save Changes</>}
         </Button>
+
+        <div className="border-b border-border pb-2">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Demo Data</h3>
+        </div>
+
+        <div className="flex gap-3">
+          <Button variant="outline" size="sm" onClick={handleSeedDemo} className="flex-1">
+            Load Demo Items
+          </Button>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" className="flex-1" disabled={clearing}>
+                <Trash2 className="w-4 h-4 mr-1" />
+                Clear Demo Data & Start Customizing
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-card border-border">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-foreground">Clear All Menu Items?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will delete all placeholder items and let you build your own menu from scratch. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleClearDemo} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Yes, Clear & Start Fresh
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
 
         <p className="text-xs text-muted-foreground text-center">
           Tip: In admin mode, click any menu placeholder to add a dish.

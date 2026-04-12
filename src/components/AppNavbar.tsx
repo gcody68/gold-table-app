@@ -1,6 +1,7 @@
 import { useAdmin } from "@/contexts/AdminContext";
 import { useRestaurantSettings } from "@/hooks/useRestaurantSettings";
-import { Settings, Shield } from "lucide-react";
+import { useLightMode } from "@/hooks/useLightMode";
+import { Settings, Shield, Sun, Moon } from "lucide-react";
 import { useState } from "react";
 import AdminLoginModal from "./AdminLoginModal";
 
@@ -9,6 +10,7 @@ type Props = { showAdmin: boolean; onToggleAdmin: () => void };
 export default function AppNavbar({ showAdmin, onToggleAdmin }: Props) {
   const { isAdmin } = useAdmin();
   const { data: settings } = useRestaurantSettings();
+  const { isLight, toggle: toggleLight } = useLightMode();
   const [loginOpen, setLoginOpen] = useState(false);
 
   return (
@@ -19,6 +21,13 @@ export default function AppNavbar({ showAdmin, onToggleAdmin }: Props) {
             {settings?.business_name || "Restaurant"}
           </span>
           <div className="flex items-center gap-2">
+            <button
+              onClick={toggleLight}
+              className="p-2 rounded-md text-muted-foreground hover:text-gold transition-colors"
+              aria-label="Toggle light/dark mode"
+            >
+              {isLight ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+            </button>
             {isAdmin && (
               <button
                 onClick={onToggleAdmin}
