@@ -64,12 +64,12 @@ export default function ProfitCalculator() {
           <div className="space-y-2">
             <div className="flex justify-between items-center text-sm">
               <span className="text-foreground font-medium">Your Own App</span>
-              <span className="text-green-500 font-bold">$0</span>
+              <span className="font-bold" style={{ color: "hsl(142 71% 45%)" }}>$0</span>
             </div>
             <div className="w-full h-8 bg-secondary rounded-md overflow-hidden">
               <div
-                className="h-full bg-green-500/80 rounded-md flex items-center px-3 transition-all duration-500"
-                style={{ width: "15%" }}
+                className="h-full rounded-md flex items-center px-3 transition-all duration-500"
+                style={{ width: "15%", backgroundColor: "hsla(142, 71%, 45%, 0.8)" }}
               >
                 <span className="text-primary-foreground text-xs font-semibold whitespace-nowrap">
                   0% Commission
