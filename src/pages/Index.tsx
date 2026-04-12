@@ -7,6 +7,7 @@ import AppNavbar from "@/components/AppNavbar";
 import HeroSection from "@/components/HeroSection";
 import MenuGrid from "@/components/MenuGrid";
 import AdminPanel from "@/components/AdminPanel";
+import ProfitCalculator from "@/components/ProfitCalculator";
 import CartSidebar from "@/components/CartSidebar";
 import CartFAB from "@/components/CartFAB";
 import AdminLoginModal from "@/components/AdminLoginModal";
@@ -30,6 +31,7 @@ function AppContent() {
       {isAdmin && showAdmin && <AdminPanel />}
       <HeroSection />
       <MenuGrid />
+      <ProfitCalculator />
       <CartFAB />
       <CartSidebar />
       <footer className="border-t border-border py-8 text-center space-y-4">
