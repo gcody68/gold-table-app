@@ -33,7 +33,7 @@ export default function MenuGrid() {
 
   const grouped = CATEGORIES.map((cat) => ({
     category: cat,
-    items: (items || []).filter((i) => i.category === cat && !i.is_placeholder),
+    items: (items || []).filter((i) => i.category === cat),
   }));
 
   return (

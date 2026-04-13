@@ -84,7 +84,10 @@ export default function ProfitCalculator() {
             Keep an extra {formatted(loss)}
           </p>
           <p className="text-muted-foreground text-lg">in your pocket every month!</p>
-          <button className="gradient-gold text-primary-foreground font-semibold px-8 py-3 rounded-lg text-lg hover:opacity-90 transition-opacity inline-flex items-center gap-2">
+          <button
+            onClick={() => document.getElementById("get-started")?.scrollIntoView({ behavior: "smooth" })}
+            className="gradient-gold text-primary-foreground font-semibold px-8 py-3 rounded-lg text-lg hover:opacity-90 transition-opacity inline-flex items-center gap-2"
+          >
             <TrendingUp className="w-5 h-5" />
             Start Saving Now
           </button>

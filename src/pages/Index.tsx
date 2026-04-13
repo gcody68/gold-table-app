@@ -8,6 +8,7 @@ import HeroSection from "@/components/HeroSection";
 import MenuGrid from "@/components/MenuGrid";
 import AdminPanel from "@/components/AdminPanel";
 import ProfitCalculator from "@/components/ProfitCalculator";
+import ContactSection from "@/components/ContactSection";
 import CartSidebar from "@/components/CartSidebar";
 import CartFAB from "@/components/CartFAB";
 import AdminLoginModal from "@/components/AdminLoginModal";
@@ -32,6 +33,7 @@ function AppContent() {
       <HeroSection />
       <MenuGrid />
       <ProfitCalculator />
+      <ContactSection />
       <CartFAB />
       <CartSidebar />
       <footer className="border-t border-border py-8 text-center space-y-4">
