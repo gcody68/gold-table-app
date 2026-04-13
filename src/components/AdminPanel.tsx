@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Save, ImagePlus, Loader2, X, Trash2 } from "lucide-react";
 import { useAdmin } from "@/contexts/AdminContext";
 import ThemeSelector from "@/components/ThemeSelector";
+import BackgroundStyleSelector, { type BgStyleId, applyBgStyle, getBgStyleById } from "@/components/BackgroundStyleSelector";
 import { type ThemeId, applyTheme, getThemeById } from "@/lib/themes";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -35,6 +36,7 @@ export default function AdminPanel() {
   const [phone, setPhone] = useState("");
   const [headerUrl, setHeaderUrl] = useState("");
   const [theme, setTheme] = useState<ThemeId>("midnight-gold");
+  const [bgStyle, setBgStyle] = useState<BgStyleId>("deep-charcoal");
   const [uploading, setUploading] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [initialized, setInitialized] = useState(false);
@@ -52,6 +54,11 @@ export default function AdminPanel() {
   const handleThemeChange = (id: ThemeId) => {
     setTheme(id);
     applyTheme(getThemeById(id));
+  };
+
+  const handleBgStyleChange = (id: BgStyleId) => {
+    setBgStyle(id);
+    applyBgStyle(getBgStyleById(id));
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -163,6 +170,9 @@ export default function AdminPanel() {
 
         <div className="border-b border-border pb-2" />
         <ThemeSelector value={theme} onChange={handleThemeChange} />
+
+        <div className="border-b border-border pb-2" />
+        <BackgroundStyleSelector value={bgStyle} onChange={handleBgStyleChange} />
 
         <Button
           onClick={handleSave}

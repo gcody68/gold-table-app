@@ -15,7 +15,7 @@ export default function HeroSection() {
         width={1920}
         height={1080}
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
       <div className="relative z-10 container pb-8 space-y-3">
         <h1 className="text-4xl md:text-6xl font-serif font-bold text-gradient-gold leading-tight">
           {settings?.business_name || "Your Restaurant"}
