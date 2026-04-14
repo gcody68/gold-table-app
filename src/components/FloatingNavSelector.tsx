@@ -12,8 +12,9 @@ export default function FloatingNavSelector() {
 
   const categoriesWithItems = CATEGORIES.filter((cat) => {
     const hasItems = (items || []).some((i) => i.category === cat);
+    if (hasItems) return true;
     if (ADMIN_ONLY_CATEGORIES.includes(cat)) return isAdmin;
-    return hasItems;
+    return false;
   });
 
   const cartCount = cartItems.reduce((s, i) => s + i.quantity, 0);

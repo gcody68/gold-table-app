@@ -7,7 +7,6 @@ import AppNavbar from "@/components/AppNavbar";
 import HeroSection from "@/components/HeroSection";
 import MenuGrid from "@/components/MenuGrid";
 import AdminPanel from "@/components/AdminPanel";
-import ContactSection from "@/components/ContactSection";
 import CartSidebar from "@/components/CartSidebar";
 import CartFAB from "@/components/CartFAB";
 import GallerySection from "@/components/GallerySection";
@@ -31,8 +30,7 @@ function AppContent() {
       <HeroSection />
       <MenuGrid />
       {settings?.show_gallery && <GallerySection />}
-      <ContactSection />
-      <CartFAB />
+<CartFAB />
       <CartSidebar />
       <FloatingNavSelector />
       <footer className="border-t border-border py-8 text-center">

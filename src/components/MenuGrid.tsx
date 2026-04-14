@@ -36,8 +36,9 @@ export default function MenuGrid() {
     items: (items || []).filter((i) => i.category === cat),
     isAdminOnly: ADMIN_ONLY_CATEGORIES.includes(cat),
   })).filter(({ items: catItems, isAdminOnly }) => {
+    if (catItems.length > 0) return true;
     if (isAdminOnly) return isAdmin;
-    return isAdmin || catItems.length > 0;
+    return false;
   });
 
   return (
