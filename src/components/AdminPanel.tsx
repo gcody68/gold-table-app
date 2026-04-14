@@ -3,9 +3,10 @@ import { useRestaurantSettings, useUpdateSettings } from "@/hooks/useRestaurantS
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { uploadImage } from "@/hooks/useImageUpload";
 import { toast } from "sonner";
-import { Save, ImagePlus, Loader2, X, Trash2 } from "lucide-react";
+import { Save, ImagePlus, Loader as Loader2, X, Trash2, CreditCard, Settings, Monitor } from "lucide-react";
 import { useAdmin } from "@/contexts/AdminContext";
 import ThemeSelector from "@/components/ThemeSelector";
 import BackgroundStyleSelector, { type BgStyleId, applyBgStyle, getBgStyleById } from "@/components/BackgroundStyleSelector";
@@ -24,6 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function AdminPanel() {
   const { data: settings } = useRestaurantSettings();
@@ -42,12 +44,23 @@ export default function AdminPanel() {
   const [initialized, setInitialized] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [paymentEnabled, setPaymentEnabled] = useState(false);
+  const [stripePublicKey, setStripePublicKey] = useState("");
+  const [stripeSecretKey, setStripeSecretKey] = useState("");
+  const [kitchenViewEnabled, setKitchenViewEnabled] = useState(true);
+  const [showGallery, setShowGallery] = useState(false);
+
   if (settings && !initialized) {
     setName(settings.business_name);
     setAddress(settings.business_address || "");
     setPhone(settings.business_phone || "");
     setHeaderUrl(settings.header_image_url || "");
     setTheme((settings.theme as ThemeId) || "midnight-gold");
+    setPaymentEnabled(settings.payment_enabled ?? false);
+    setStripePublicKey(settings.stripe_public_key || "");
+    setStripeSecretKey(settings.stripe_secret_key || "");
+    setKitchenViewEnabled(settings.kitchen_view_enabled ?? true);
+    setShowGallery(settings.show_gallery ?? false);
     setInitialized(true);
   }
 
@@ -85,6 +98,11 @@ export default function AdminPanel() {
         business_phone: phone,
         header_image_url: headerUrl || null,
         theme,
+        payment_enabled: paymentEnabled,
+        stripe_public_key: stripePublicKey.trim() || null,
+        stripe_secret_key: stripeSecretKey.trim() || null,
+        kitchen_view_enabled: kitchenViewEnabled,
+        show_gallery: showGallery,
       });
       toast.success("Settings saved!");
     } catch {
@@ -107,10 +125,7 @@ export default function AdminPanel() {
 
   const handleSeedDemo = async () => {
     try {
-      const items = STARTER_ITEMS.map((item) => ({
-        ...item,
-        is_placeholder: false,
-      }));
+      const items = STARTER_ITEMS.map((item) => ({ ...item, is_placeholder: false }));
       await supabase.from("menu_items").insert(items);
       qc.invalidateQueries({ queryKey: ["menu-items"] });
       toast.success("Demo items added!");
@@ -121,103 +136,201 @@ export default function AdminPanel() {
 
   return (
     <div className="container py-6">
-      <div className="bg-card border border-border rounded-lg p-6 max-w-lg mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="bg-card border border-border rounded-lg p-6 max-w-2xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-serif font-bold text-gold">Admin Dashboard</h2>
           <Button variant="ghost" size="sm" onClick={logout} className="text-muted-foreground hover:text-foreground">
             <X className="w-4 h-4 mr-1" /> Logout
           </Button>
         </div>
 
-        <div className="border-b border-border pb-2">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Branding</h3>
-        </div>
+        <Tabs defaultValue="branding">
+          <TabsList className="w-full mb-6 bg-secondary">
+            <TabsTrigger value="branding" className="flex-1 gap-1.5">
+              <Settings className="w-3.5 h-3.5" /> Branding
+            </TabsTrigger>
+            <TabsTrigger value="payment" className="flex-1 gap-1.5">
+              <CreditCard className="w-3.5 h-3.5" /> Payment
+            </TabsTrigger>
+            <TabsTrigger value="kitchen" className="flex-1 gap-1.5">
+              <Monitor className="w-3.5 h-3.5" /> Kitchen
+            </TabsTrigger>
+          </TabsList>
 
-        <div>
-          <Label className="text-muted-foreground text-xs">Business Name</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} className="bg-secondary border-border" />
-        </div>
+          <TabsContent value="branding" className="space-y-6">
+            <div>
+              <Label className="text-muted-foreground text-xs">Business Name</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} className="bg-secondary border-border" />
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-xs">Address</Label>
+              <Input value={address} onChange={(e) => setAddress(e.target.value)} className="bg-secondary border-border" />
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-xs">Phone</Label>
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="bg-secondary border-border" />
+            </div>
 
-        <div>
-          <Label className="text-muted-foreground text-xs">Address</Label>
-          <Input value={address} onChange={(e) => setAddress(e.target.value)} className="bg-secondary border-border" />
-        </div>
+            <div>
+              <Label className="text-muted-foreground text-xs">Header Image</Label>
+              <div
+                onClick={() => fileRef.current?.click()}
+                className="mt-1 h-32 rounded-lg bg-secondary border-2 border-dashed border-border hover:border-primary/40 cursor-pointer flex items-center justify-center overflow-hidden transition-colors"
+              >
+                {uploading ? (
+                  <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                ) : headerUrl ? (
+                  <img src={headerUrl} alt="Header" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                    <ImagePlus className="w-6 h-6" />
+                    <span className="text-xs">Upload</span>
+                  </div>
+                )}
+              </div>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+            </div>
 
-        <div>
-          <Label className="text-muted-foreground text-xs">Phone</Label>
-          <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="bg-secondary border-border" />
-        </div>
+            <div className="flex items-center justify-between py-2 border border-border rounded-lg px-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">Show Gallery Section</p>
+                <p className="text-xs text-muted-foreground">Display photo gallery on the public menu</p>
+              </div>
+              <Switch checked={showGallery} onCheckedChange={setShowGallery} />
+            </div>
 
-        <div>
-          <Label className="text-muted-foreground text-xs">Header Image</Label>
-          <div
-            onClick={() => fileRef.current?.click()}
-            className="mt-1 h-32 rounded-lg bg-secondary border-2 border-dashed border-border hover:border-primary/40 cursor-pointer flex items-center justify-center overflow-hidden transition-colors"
-          >
-            {uploading ? (
-              <Loader2 className="w-6 h-6 text-primary animate-spin" />
-            ) : headerUrl ? (
-              <img src={headerUrl} alt="Header" className="w-full h-full object-cover" />
+            <div className="border-b border-border" />
+            <ThemeSelector value={theme} onChange={handleThemeChange} />
+            <div className="border-b border-border" />
+            <BackgroundStyleSelector value={bgStyle} onChange={handleBgStyleChange} />
+
+            <div className="border-b border-border pb-2">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Demo Data</h3>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" size="sm" onClick={handleSeedDemo} className="flex-1">
+                Load Demo Items
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" className="flex-1" disabled={clearing}>
+                    <Trash2 className="w-4 h-4 mr-1" /> Clear & Start Fresh
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="bg-card border-border">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-foreground">Clear All Menu Items?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will delete all menu items. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleClearDemo} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Yes, Clear & Start Fresh
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Tip: In admin mode, click any menu item to edit it.
+            </p>
+          </TabsContent>
+
+          <TabsContent value="payment" className="space-y-6">
+            <div className="flex items-center justify-between py-2 border border-border rounded-lg px-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">Enable Online Payments</p>
+                <p className="text-xs text-muted-foreground">Collect card payments at checkout</p>
+              </div>
+              <Switch checked={paymentEnabled} onCheckedChange={setPaymentEnabled} />
+            </div>
+
+            {paymentEnabled ? (
+              <div className="space-y-4 border border-border rounded-lg p-4 bg-secondary/30">
+                <p className="text-xs text-muted-foreground">
+                  Enter your Stripe or Paystack API keys. Public key is used client-side; secret key is stored securely.
+                </p>
+                <div>
+                  <Label className="text-muted-foreground text-xs">Public Key (pk_live_... or pk_test_...)</Label>
+                  <Input
+                    value={stripePublicKey}
+                    onChange={(e) => setStripePublicKey(e.target.value)}
+                    placeholder="pk_live_..."
+                    className="bg-secondary border-border font-mono text-sm"
+                  />
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-xs">Secret Key (sk_live_... or sk_test_...)</Label>
+                  <Input
+                    type="password"
+                    value={stripeSecretKey}
+                    onChange={(e) => setStripeSecretKey(e.target.value)}
+                    placeholder="sk_live_..."
+                    className="bg-secondary border-border font-mono text-sm"
+                  />
+                </div>
+                <p className="text-xs text-amber-500/80">Keep your secret key private. It will be masked after saving.</p>
+              </div>
             ) : (
-              <div className="flex flex-col items-center gap-1 text-muted-foreground">
-                <ImagePlus className="w-6 h-6" />
-                <span className="text-xs">Upload</span>
+              <div className="text-center py-8 text-muted-foreground">
+                <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Toggle on to configure your payment processor.</p>
+                <p className="text-xs mt-1">Customers will see "Pay in Person" when payments are off.</p>
               </div>
             )}
-          </div>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
-        </div>
+          </TabsContent>
 
-        <div className="border-b border-border pb-2" />
-        <ThemeSelector value={theme} onChange={handleThemeChange} />
+          <TabsContent value="kitchen" className="space-y-6">
+            <div className="flex items-center justify-between py-2 border border-border rounded-lg px-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">Kitchen Display</p>
+                <p className="text-xs text-muted-foreground">Enable the /kitchen page for your kitchen staff</p>
+              </div>
+              <Switch checked={kitchenViewEnabled} onCheckedChange={setKitchenViewEnabled} />
+            </div>
 
-        <div className="border-b border-border pb-2" />
-        <BackgroundStyleSelector value={bgStyle} onChange={handleBgStyleChange} />
+            {kitchenViewEnabled ? (
+              <div className="border border-border rounded-lg p-4 bg-secondary/30 space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Share this link with your kitchen staff. Orders placed by customers appear here in real-time.
+                </p>
+                <div className="flex items-center gap-2 bg-secondary rounded-md px-3 py-2">
+                  <span className="text-xs font-mono text-gold flex-1 truncate">
+                    {window.location.origin}/kitchen
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-xs h-7"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/kitchen`);
+                      toast.success("Link copied!");
+                    }}
+                  >
+                    Copy
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Monitor className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Kitchen display is currently disabled.</p>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
 
-        <Button
-          onClick={handleSave}
-          disabled={update.isPending}
-          className="w-full gradient-gold text-primary-foreground font-semibold"
-        >
-          {update.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-2" /> Save Changes</>}
-        </Button>
-
-        <div className="border-b border-border pb-2">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Demo Data</h3>
-        </div>
-
-        <div className="flex gap-3">
-          <Button variant="outline" size="sm" onClick={handleSeedDemo} className="flex-1">
-            Load Demo Items
+        <div className="mt-6 pt-4 border-t border-border">
+          <Button
+            onClick={handleSave}
+            disabled={update.isPending}
+            className="w-full gradient-gold text-primary-foreground font-semibold"
+          >
+            {update.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-2" /> Save All Changes</>}
           </Button>
-
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" className="flex-1" disabled={clearing}>
-                <Trash2 className="w-4 h-4 mr-1" />
-                Clear Demo Data & Start Customizing
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent className="bg-card border-border">
-              <AlertDialogHeader>
-                <AlertDialogTitle className="text-foreground">Clear All Menu Items?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will delete all placeholder items and let you build your own menu from scratch. This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleClearDemo} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  Yes, Clear & Start Fresh
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </div>
-
-        <p className="text-xs text-muted-foreground text-center">
-          Tip: In admin mode, click any menu placeholder to add a dish.
-        </p>
       </div>
     </div>
   );

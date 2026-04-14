@@ -34,7 +34,7 @@ export default function MenuGrid() {
   const grouped = CATEGORIES.map((cat) => ({
     category: cat,
     items: (items || []).filter((i) => i.category === cat),
-  }));
+  })).filter(({ items: catItems }) => isAdmin || catItems.length > 0);
 
   return (
     <section className="container py-12 space-y-12">
@@ -43,7 +43,7 @@ export default function MenuGrid() {
       </h2>
 
       {grouped.map(({ category, items: catItems }) => (
-        <div key={category}>
+        <div key={category} id={`category-${category}`}>
           <h3 className="text-2xl font-serif font-semibold text-gold/80 mb-6 border-b border-border pb-2">
             {category}
           </h3>
