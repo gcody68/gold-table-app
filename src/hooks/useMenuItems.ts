@@ -12,7 +12,9 @@ export type MenuItem = {
   category: string;
 };
 
-export const CATEGORIES = ["Mains", "Sides", "Drinks"] as const;
+export const CATEGORIES = ["Mains", "Sides", "Drinks", "Specials", "Desserts"] as const;
+
+export const ADMIN_ONLY_CATEGORIES: string[] = ["Specials", "Desserts"];
 
 export function useMenuItems() {
   return useQuery({

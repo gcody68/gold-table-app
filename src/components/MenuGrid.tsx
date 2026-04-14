@@ -1,4 +1,4 @@
-import { useMenuItems, CATEGORIES, type MenuItem } from "@/hooks/useMenuItems";
+import { useMenuItems, CATEGORIES, ADMIN_ONLY_CATEGORIES, type MenuItem } from "@/hooks/useMenuItems";
 import { useAdmin } from "@/contexts/AdminContext";
 import { useCart } from "@/contexts/CartContext";
 import { Plus, UtensilsCrossed, ShoppingBag } from "lucide-react";
@@ -34,7 +34,11 @@ export default function MenuGrid() {
   const grouped = CATEGORIES.map((cat) => ({
     category: cat,
     items: (items || []).filter((i) => i.category === cat),
-  })).filter(({ items: catItems }) => isAdmin || catItems.length > 0);
+    isAdminOnly: ADMIN_ONLY_CATEGORIES.includes(cat),
+  })).filter(({ items: catItems, isAdminOnly }) => {
+    if (isAdminOnly) return isAdmin;
+    return isAdmin || catItems.length > 0;
+  });
 
   return (
     <section className="container py-12 space-y-12">
@@ -42,11 +46,18 @@ export default function MenuGrid() {
         Our Menu
       </h2>
 
-      {grouped.map(({ category, items: catItems }) => (
+      {grouped.map(({ category, items: catItems, isAdminOnly }) => (
         <div key={category} id={`category-${category}`}>
-          <h3 className="text-2xl font-serif font-semibold text-gold/80 mb-6 border-b border-border pb-2">
-            {category}
-          </h3>
+          <div className="flex items-center gap-3 mb-6 border-b border-border pb-2">
+            <h3 className="text-2xl font-serif font-semibold text-gold/80">
+              {category}
+            </h3>
+            {isAdminOnly && catItems.length === 0 && (
+              <span className="text-xs font-medium bg-gold/20 text-gold border border-gold/30 px-2 py-0.5 rounded-full">
+                Admin only · not visible to customers
+              </span>
+            )}
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {catItems.map((item, i) => (
               <div

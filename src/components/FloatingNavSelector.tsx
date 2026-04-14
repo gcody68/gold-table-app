@@ -1,16 +1,20 @@
-import { useMenuItems, CATEGORIES } from "@/hooks/useMenuItems";
+import { useMenuItems, CATEGORIES, ADMIN_ONLY_CATEGORIES } from "@/hooks/useMenuItems";
 import { useCart } from "@/contexts/CartContext";
 import { useRestaurantSettings } from "@/hooks/useRestaurantSettings";
+import { useAdmin } from "@/contexts/AdminContext";
 import { ShoppingBag, Images } from "lucide-react";
 
 export default function FloatingNavSelector() {
   const { data: items } = useMenuItems();
   const { items: cartItems, setIsOpen } = useCart();
   const { data: settings } = useRestaurantSettings();
+  const { isAdmin } = useAdmin();
 
-  const categoriesWithItems = CATEGORIES.filter((cat) =>
-    (items || []).some((i) => i.category === cat)
-  );
+  const categoriesWithItems = CATEGORIES.filter((cat) => {
+    const hasItems = (items || []).some((i) => i.category === cat);
+    if (ADMIN_ONLY_CATEGORIES.includes(cat)) return isAdmin;
+    return hasItems;
+  });
 
   const cartCount = cartItems.reduce((s, i) => s + i.quantity, 0);
 
