@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { uploadImage } from "@/hooks/useImageUpload";
 import { toast } from "sonner";
-import { Save, ImagePlus, Loader as Loader2, X, Trash2, CreditCard, Settings, Monitor } from "lucide-react";
+import { Save, ImagePlus, Loader as Loader2, X, Trash2, CreditCard, Settings, Monitor, FileSpreadsheet, KeyRound } from "lucide-react";
 import { useAdmin } from "@/contexts/AdminContext";
 import ThemeSelector from "@/components/ThemeSelector";
 import BackgroundStyleSelector, { type BgStyleId, applyBgStyle, getBgStyleById } from "@/components/BackgroundStyleSelector";
@@ -14,6 +14,8 @@ import { type ThemeId, applyTheme, getThemeById } from "@/lib/themes";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { STARTER_ITEMS } from "@/components/StarterContent";
+import ExcelImporter from "@/components/ExcelImporter";
+import ChangePasswordModal from "@/components/ChangePasswordModal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +44,8 @@ export default function AdminPanel() {
   const [uploading, setUploading] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [showImporter, setShowImporter] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [paymentEnabled, setPaymentEnabled] = useState(false);
@@ -139,9 +143,19 @@ export default function AdminPanel() {
       <div className="bg-card border border-border rounded-lg p-6 max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-serif font-bold text-gold">Admin Dashboard</h2>
-          <Button variant="ghost" size="sm" onClick={logout} className="text-muted-foreground hover:text-foreground">
-            <X className="w-4 h-4 mr-1" /> Logout
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowChangePassword(true)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <KeyRound className="w-4 h-4 mr-1" /> Password
+            </Button>
+            <Button variant="ghost" size="sm" onClick={logout} className="text-muted-foreground hover:text-foreground">
+              <X className="w-4 h-4 mr-1" /> Logout
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="branding">
@@ -205,16 +219,24 @@ export default function AdminPanel() {
             <BackgroundStyleSelector value={bgStyle} onChange={handleBgStyleChange} />
 
             <div className="border-b border-border pb-2">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Demo Data</h3>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Import & Demo Data</h3>
             </div>
             <div className="flex gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowImporter(true)}
+                className="flex-1 gap-2 border-border hover:border-primary/40"
+              >
+                <FileSpreadsheet className="w-4 h-4" /> Import Menu
+              </Button>
               <Button variant="outline" size="sm" onClick={handleSeedDemo} className="flex-1">
                 Load Demo Items
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" size="sm" className="flex-1" disabled={clearing}>
-                    <Trash2 className="w-4 h-4 mr-1" /> Clear & Start Fresh
+                    <Trash2 className="w-4 h-4 mr-1" /> Clear All
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent className="bg-card border-border">
@@ -332,6 +354,9 @@ export default function AdminPanel() {
           </Button>
         </div>
       </div>
+
+      <ExcelImporter open={showImporter} onClose={() => setShowImporter(false)} />
+      <ChangePasswordModal open={showChangePassword} onClose={() => setShowChangePassword(false)} />
     </div>
   );
 }

@@ -10,6 +10,12 @@ import { Lock, Shield, ChevronRight } from "lucide-react";
 type Props = { open: boolean; onClose: () => void };
 type Mode = "login" | "signup";
 
+function normalizeEmail(input: string): string {
+  if (input.trim() === "admin") return "admin@admin.local";
+  if (!input.includes("@")) return `${input.trim()}@admin.local`;
+  return input.trim();
+}
+
 export default function AdminLoginModal({ open, onClose }: Props) {
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
@@ -35,10 +41,10 @@ export default function AdminLoginModal({ open, onClose }: Props) {
     e.preventDefault();
     if (!email.trim() || !password.trim()) return;
     setLoading(true);
-    const { error } = await login(email.trim(), password);
+    const { error } = await login(normalizeEmail(email), password);
     setLoading(false);
     if (error) {
-      toast.error("Invalid email or password");
+      toast.error("Invalid username or password");
     } else {
       toast.success("Welcome back!");
       handleClose();
@@ -49,7 +55,7 @@ export default function AdminLoginModal({ open, onClose }: Props) {
     e.preventDefault();
     if (!email.trim() || !password.trim() || !restaurantName.trim()) return;
     setLoading(true);
-    const { error } = await signUp(email.trim(), password, restaurantName.trim());
+    const { error } = await signUp(normalizeEmail(email), password, restaurantName.trim());
     setLoading(false);
     if (error) {
       toast.error(error);
@@ -72,12 +78,12 @@ export default function AdminLoginModal({ open, onClose }: Props) {
         {mode === "login" ? (
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-1">
-              <Label className="text-muted-foreground text-xs">Email</Label>
+              <Label className="text-muted-foreground text-xs">Username or Email</Label>
               <Input
-                type="email"
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="owner@restaurant.com"
+                placeholder="admin"
                 className="bg-secondary border-border"
                 autoFocus
               />
@@ -123,9 +129,9 @@ export default function AdminLoginModal({ open, onClose }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-muted-foreground text-xs">Email</Label>
+              <Label className="text-muted-foreground text-xs">Username or Email</Label>
               <Input
-                type="email"
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="owner@restaurant.com"
