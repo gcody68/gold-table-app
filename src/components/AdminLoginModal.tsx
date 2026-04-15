@@ -83,7 +83,7 @@ export default function AdminLoginModal({ open, onClose }: Props) {
                 type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin"
+                placeholder=""
                 className="bg-secondary border-border"
                 autoFocus
               />
@@ -94,7 +94,7 @@ export default function AdminLoginModal({ open, onClose }: Props) {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder=""
                 className="bg-secondary border-border"
               />
             </div>
@@ -123,7 +123,7 @@ export default function AdminLoginModal({ open, onClose }: Props) {
               <Input
                 value={restaurantName}
                 onChange={(e) => setRestaurantName(e.target.value)}
-                placeholder="My Restaurant"
+                placeholder=""
                 className="bg-secondary border-border"
                 autoFocus
               />
@@ -134,7 +134,7 @@ export default function AdminLoginModal({ open, onClose }: Props) {
                 type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="owner@restaurant.com"
+                placeholder=""
                 className="bg-secondary border-border"
               />
             </div>
@@ -144,7 +144,7 @@ export default function AdminLoginModal({ open, onClose }: Props) {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Min. 6 characters"
+                placeholder=""
                 className="bg-secondary border-border"
               />
             </div>

@@ -2,10 +2,20 @@ import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { FileSpreadsheet, Upload, FlaskConical, Loader as Loader2 } from "lucide-react";
+import { FileSpreadsheet, Upload, FlaskConical, Loader as Loader2, TriangleAlert } from "lucide-react";
 import { CATEGORIES } from "@/hooks/useMenuItems";
 import {
   MOCK_MENU_ITEMS,
@@ -145,11 +155,42 @@ type Props = { open: boolean; onClose: () => void };
 export default function ExcelImporter({ open, onClose }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [showCaution, setShowCaution] = useState(false);
+  const [cautionTarget, setCautionTarget] = useState<"file" | "mock" | null>(null);
   const qc = useQueryClient();
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const triggerCaution = (target: "file" | "mock") => {
+    setCautionTarget(target);
+    setShowCaution(true);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setPendingFile(file);
+    if (fileRef.current) fileRef.current.value = "";
+    triggerCaution("file");
+  };
+
+  const handleCautionConfirm = async () => {
+    setShowCaution(false);
+    if (cautionTarget === "file" && pendingFile) {
+      await executeFileImport(pendingFile);
+      setPendingFile(null);
+    } else if (cautionTarget === "mock") {
+      await executeMockImport();
+    }
+    setCautionTarget(null);
+  };
+
+  const handleCautionCancel = () => {
+    setShowCaution(false);
+    setPendingFile(null);
+    setCautionTarget(null);
+  };
+
+  const executeFileImport = async (file: File) => {
     setLoading(true);
     try {
       const buffer = await file.arrayBuffer();
@@ -168,11 +209,10 @@ export default function ExcelImporter({ open, onClose }: Props) {
       toast.error(err instanceof Error ? err.message : "Import failed");
     } finally {
       setLoading(false);
-      if (fileRef.current) fileRef.current.value = "";
     }
   };
 
-  const handleMockImport = async () => {
+  const executeMockImport = async () => {
     setLoading(true);
     try {
       const count = await runMockImport(qc);
@@ -186,62 +226,99 @@ export default function ExcelImporter({ open, onClose }: Props) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="bg-card border-border max-w-md">
-        <DialogHeader>
-          <DialogTitle className="font-serif text-gold flex items-center gap-2">
-            <FileSpreadsheet className="w-5 h-5" />
-            Import Menu from Excel
-          </DialogTitle>
-          <DialogDescription className="text-muted-foreground text-sm">
-            Upload an .xlsx file. Each sheet name becomes a menu category. Special sheets:
-            <strong className="text-foreground"> Restaurant_Info</strong> and <strong className="text-foreground">Gallery</strong>.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="bg-card border-border max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-gold flex items-center gap-2">
+              <FileSpreadsheet className="w-5 h-5" />
+              Import Menu from Excel
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground text-sm">
+              Upload an .xlsx file. Each sheet name becomes a menu category. Special sheets:
+              <strong className="text-foreground"> Restaurant_Info</strong> and <strong className="text-foreground">Gallery</strong>.
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-5 pt-2">
-          <div
-            onClick={() => !loading && fileRef.current?.click()}
-            className="border-2 border-dashed border-border hover:border-primary/40 rounded-lg p-8 flex flex-col items-center gap-3 cursor-pointer transition-colors group"
-          >
-            {loading ? (
-              <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            ) : (
-              <>
-                <Upload className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
-                <div className="text-center">
-                  <p className="text-sm font-medium text-foreground">Click to upload .xlsx file</p>
-                  <p className="text-xs text-muted-foreground mt-1">Sheets: Mains · Sides · Drinks · Desserts · Specials · Gallery · Restaurant_Info</p>
-                </div>
-              </>
-            )}
+          <div className="space-y-5 pt-2">
+            <div
+              onClick={() => !loading && fileRef.current?.click()}
+              className="border-2 border-dashed border-border hover:border-primary/40 rounded-lg p-8 flex flex-col items-center gap-3 cursor-pointer transition-colors group"
+            >
+              {loading ? (
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              ) : (
+                <>
+                  <Upload className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-foreground">Click to upload .xlsx file</p>
+                    <p className="text-xs text-muted-foreground mt-1">Sheets: Mains · Sides · Drinks · Desserts · Specials · Gallery · Restaurant_Info</p>
+                  </div>
+                </>
+              )}
+            </div>
+            <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileSelect} />
+
+            <div className="relative flex items-center">
+              <div className="flex-1 border-t border-border" />
+              <span className="px-3 text-xs text-muted-foreground">or</span>
+              <div className="flex-1 border-t border-border" />
+            </div>
+
+            <Button
+              variant="outline"
+              className="w-full gap-2 border-border hover:border-primary/40"
+              onClick={() => triggerCaution("mock")}
+              disabled={loading}
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FlaskConical className="w-4 h-4" />}
+              Load Mock Data (Ribeye, Salmon, Margaritas + Gallery)
+            </Button>
+
+            <div className="bg-secondary/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
+              <p className="font-semibold text-foreground text-xs">Excel Column Format (per sheet):</p>
+              <p>Menu sheets: <code className="bg-secondary px-1 rounded">name · description · price · image_url</code></p>
+              <p>Gallery sheet: <code className="bg-secondary px-1 rounded">image_url · caption</code></p>
+              <p>Restaurant_Info: <code className="bg-secondary px-1 rounded">Name · Address · Phone</code></p>
+            </div>
           </div>
-          <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFile} />
+        </DialogContent>
+      </Dialog>
 
-          <div className="relative flex items-center">
-            <div className="flex-1 border-t border-border" />
-            <span className="px-3 text-xs text-muted-foreground">or</span>
-            <div className="flex-1 border-t border-border" />
-          </div>
-
-          <Button
-            variant="outline"
-            className="w-full gap-2 border-border hover:border-primary/40"
-            onClick={handleMockImport}
-            disabled={loading}
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FlaskConical className="w-4 h-4" />}
-            Load Mock Data (Ribeye, Salmon, Margaritas + Gallery)
-          </Button>
-
-          <div className="bg-secondary/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
-            <p className="font-semibold text-foreground text-xs">Excel Column Format (per sheet):</p>
-            <p>Menu sheets: <code className="bg-secondary px-1 rounded">name · description · price · image_url</code></p>
-            <p>Gallery sheet: <code className="bg-secondary px-1 rounded">image_url · caption</code></p>
-            <p>Restaurant_Info: <code className="bg-secondary px-1 rounded">Name · Address · Phone</code></p>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+      <AlertDialog open={showCaution} onOpenChange={setShowCaution}>
+        <AlertDialogContent className="bg-card border-border max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground flex items-center gap-2">
+              <TriangleAlert className="w-5 h-5 text-amber-500" />
+              CAUTION: Bulk Menu Update
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <p>
+                  This will overwrite your current menu. To avoid errors, ensure you are using the{" "}
+                  <strong className="text-foreground">official Gilded Table Template</strong>.
+                </p>
+                <p>
+                  First time? We recommend doing a <strong className="text-foreground">manual upload</strong> for single items.
+                </p>
+                <p>
+                  Need help? Bulk imports are best handled by your{" "}
+                  <strong className="text-foreground">IT Support partner</strong> to ensure zero downtime.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCautionCancel}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCautionConfirm}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              I Understand, Proceed
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
