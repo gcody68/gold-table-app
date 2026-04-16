@@ -15,89 +15,145 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { FileSpreadsheet, Upload, FlaskConical, Loader as Loader2, TriangleAlert } from "lucide-react";
-import { CATEGORIES } from "@/hooks/useMenuItems";
+import { FileSpreadsheet, Upload, FlaskConical, Loader as Loader2, TriangleAlert, Download } from "lucide-react";
+import { CATEGORIES, type MealPeriod } from "@/hooks/useMenuItems";
 import {
   MOCK_MENU_ITEMS,
   MOCK_GALLERY_ITEMS,
   MOCK_RESTAURANT_INFO,
 } from "@/lib/mockImportData";
 
-const KNOWN_MENU_CATEGORIES = [...CATEGORIES];
-const RESTAURANT_INFO_SHEET = "Restaurant_Info";
-const GALLERY_SHEET = "Gallery";
+const VALID_CATEGORIES = [...CATEGORIES].map((c) => c.toLowerCase());
+const VALID_PERIODS = ["breakfast", "lunch", "dinner", "all day", "all-day"];
 
-type ParsedData = {
-  menuItems: { name: string; description: string; price: number; category: string; image_url: string }[];
-  galleryItems: { image_url: string; caption: string }[];
-  restaurantInfo: { business_name?: string; business_address?: string; business_phone?: string } | null;
-  newCategories: string[];
+type ParsedMenuItem = {
+  name: string;
+  description: string;
+  price: number;
+  image_url: string;
+  category: string;
+  meal_period: MealPeriod;
 };
 
-function parseSheet(wb: XLSX.WorkBook, sheetName: string): Record<string, string>[] {
-  const ws = wb.Sheets[sheetName];
-  if (!ws) return [];
-  return XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: "" });
+type ParsedData = {
+  menuItems: ParsedMenuItem[];
+  galleryItems: { image_url: string; caption: string }[];
+  restaurantInfo: { business_name?: string; business_address?: string; business_phone?: string } | null;
+};
+
+function normalizeCategory(raw: string): string {
+  const trimmed = raw.trim();
+  const lower = trimmed.toLowerCase();
+  const match = [...CATEGORIES].find((c) => c.toLowerCase() === lower);
+  return match ?? "Breakfast";
 }
 
-function parseExcel(buffer: ArrayBuffer): ParsedData {
+function normalizePeriod(raw: string): MealPeriod {
+  const lower = raw.trim().toLowerCase();
+  if (lower === "breakfast") return "breakfast";
+  if (lower === "lunch") return "lunch";
+  if (lower === "dinner") return "dinner";
+  if (lower === "all day" || lower === "all-day") return "all-day";
+  return "all-day";
+}
+
+function parseMenuSheet(buffer: ArrayBuffer): ParsedData {
   const wb = XLSX.read(buffer, { type: "array" });
+
   const result: ParsedData = {
     menuItems: [],
     galleryItems: [],
     restaurantInfo: null,
-    newCategories: [],
   };
 
-  for (const sheetName of wb.SheetNames) {
-    if (sheetName === RESTAURANT_INFO_SHEET) {
-      const rows = parseSheet(wb, sheetName);
-      if (rows.length > 0) {
-        const row = rows[0];
-        result.restaurantInfo = {
-          business_name: String(row["Name"] || row["business_name"] || "").trim() || undefined,
-          business_address: String(row["Address"] || row["business_address"] || "").trim() || undefined,
-          business_phone: String(row["Phone"] || row["business_phone"] || "").trim() || undefined,
-        };
-      }
-      continue;
-    }
+  const MENU_SHEET = wb.SheetNames.find((n) => n.toLowerCase() === "menu") ?? wb.SheetNames[0];
+  const GALLERY_SHEET = wb.SheetNames.find((n) => n.toLowerCase() === "gallery");
+  const INFO_SHEET = wb.SheetNames.find((n) => n.toLowerCase() === "restaurant_info");
 
-    if (sheetName === GALLERY_SHEET) {
-      const rows = parseSheet(wb, sheetName);
-      for (const row of rows) {
-        const url = String(row["image_url"] || row["URL"] || row["url"] || "").trim();
-        if (url) {
-          result.galleryItems.push({
-            image_url: url,
-            caption: String(row["caption"] || row["Caption"] || "").trim(),
-          });
-        }
-      }
-      continue;
-    }
-
-    const category = sheetName.trim();
-    const isNew = !KNOWN_MENU_CATEGORIES.includes(category as never);
-    if (isNew && !result.newCategories.includes(category)) {
-      result.newCategories.push(category);
-    }
-
-    const rows = parseSheet(wb, sheetName);
+  if (MENU_SHEET) {
+    const ws = wb.Sheets[MENU_SHEET];
+    const rows = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: "" });
     for (const row of rows) {
-      const name = String(row["name"] || row["Name"] || "").trim();
+      const name = String(row["Name"] || row["name"] || "").trim();
       if (!name) continue;
+      const rawCategory = String(row["Category"] || row["category"] || "").trim();
+      const rawPeriod = String(row["Service_Period"] || row["service_period"] || row["Period"] || "").trim();
       result.menuItems.push({
         name,
-        description: String(row["description"] || row["Description"] || "").trim(),
-        price: parseFloat(String(row["price"] || row["Price"] || "0")) || 0,
-        category,
-        image_url: String(row["image_url"] || row["Image"] || "").trim(),
+        description: String(row["Description"] || row["description"] || "").trim(),
+        price: parseFloat(String(row["Price"] || row["price"] || "0").replace(/[^0-9.]/g, "")) || 0,
+        image_url: String(row["Image_URL"] || row["image_url"] || row["Image"] || "").trim(),
+        category: normalizeCategory(rawCategory || "Breakfast"),
+        meal_period: normalizePeriod(rawPeriod || "all-day"),
       });
     }
   }
 
+  if (GALLERY_SHEET) {
+    const ws = wb.Sheets[GALLERY_SHEET];
+    const rows = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: "" });
+    for (const row of rows) {
+      const url = String(row["image_url"] || row["URL"] || row["url"] || "").trim();
+      if (url) {
+        result.galleryItems.push({
+          image_url: url,
+          caption: String(row["caption"] || row["Caption"] || "").trim(),
+        });
+      }
+    }
+  }
+
+  if (INFO_SHEET) {
+    const ws = wb.Sheets[INFO_SHEET];
+    const rows = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: "" });
+    if (rows.length > 0) {
+      const row = rows[0];
+      result.restaurantInfo = {
+        business_name: String(row["Name"] || row["business_name"] || "").trim() || undefined,
+        business_address: String(row["Address"] || row["business_address"] || "").trim() || undefined,
+        business_phone: String(row["Phone"] || row["business_phone"] || "").trim() || undefined,
+      };
+    }
+  }
+
   return result;
+}
+
+function generateTemplate(): ArrayBuffer {
+  const wb = XLSX.utils.book_new();
+
+  const menuRows = [
+    ["Name", "Description", "Price", "Image_URL", "Category", "Service_Period"],
+    ["Eggs Benedict", "Poached eggs on English muffin with hollandaise", "14.00", "", "Breakfast", "Breakfast"],
+    ["Avocado Toast", "Smashed avo on sourdough with chili flakes", "12.00", "", "Breakfast", "Breakfast"],
+    ["Caesar Salad", "Romaine, parmesan, croutons, house Caesar dressing", "13.00", "", "Lunch", "Lunch"],
+    ["Club Sandwich", "Turkey, bacon, lettuce, tomato on toasted brioche", "15.00", "", "Lunch", "Lunch"],
+    ["Ribeye Steak", "12oz ribeye with truffle butter and garlic mash", "54.00", "", "Dinner", "Dinner"],
+    ["Grilled Salmon", "Atlantic salmon with lemon-herb butter", "38.00", "", "Dinner", "Dinner"],
+    ["Garlic Fries", "Crispy fries tossed in garlic and parsley", "8.00", "", "Sides", "All Day"],
+    ["Lemonade", "Fresh-squeezed with a hint of mint", "5.00", "", "Drinks", "All Day"],
+  ];
+  const menuWs = XLSX.utils.aoa_to_sheet(menuRows);
+  menuWs["!cols"] = [{ wch: 24 }, { wch: 48 }, { wch: 10 }, { wch: 40 }, { wch: 14 }, { wch: 16 }];
+  XLSX.utils.book_append_sheet(wb, menuWs, "Menu");
+
+  const galleryRows = [
+    ["image_url", "caption"],
+    ["https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg", "Our stunning dining room"],
+  ];
+  const galleryWs = XLSX.utils.aoa_to_sheet(galleryRows);
+  galleryWs["!cols"] = [{ wch: 60 }, { wch: 40 }];
+  XLSX.utils.book_append_sheet(wb, galleryWs, "Gallery");
+
+  const infoRows = [
+    ["Name", "Address", "Phone"],
+    ["Your Restaurant Name", "123 Main St, City, State 00000", "(555) 000-0000"],
+  ];
+  const infoWs = XLSX.utils.aoa_to_sheet(infoRows);
+  infoWs["!cols"] = [{ wch: 30 }, { wch: 40 }, { wch: 20 }];
+  XLSX.utils.book_append_sheet(wb, infoWs, "Restaurant_Info");
+
+  return XLSX.write(wb, { type: "array", bookType: "xlsx" });
 }
 
 async function importData(data: ParsedData, qc: ReturnType<typeof useQueryClient>) {
@@ -145,7 +201,6 @@ async function runMockImport(qc: ReturnType<typeof useQueryClient>) {
     menuItems: MOCK_MENU_ITEMS,
     galleryItems: MOCK_GALLERY_ITEMS,
     restaurantInfo: MOCK_RESTAURANT_INFO,
-    newCategories: [],
   };
   return importData(mockData, qc);
 }
@@ -194,14 +249,18 @@ export default function ExcelImporter({ open, onClose }: Props) {
     setLoading(true);
     try {
       const buffer = await file.arrayBuffer();
-      const data = parseExcel(buffer);
-      const count = await importData(data, qc);
+      const data = parseMenuSheet(buffer);
 
+      if (data.menuItems.length === 0 && data.galleryItems.length === 0 && !data.restaurantInfo) {
+        toast.error("No data found. Make sure your file has a 'Menu' sheet with the correct columns.");
+        return;
+      }
+
+      const count = await importData(data, qc);
       const parts: string[] = [];
       if (data.menuItems.length) parts.push(`${data.menuItems.length} menu items`);
       if (data.galleryItems.length) parts.push(`${data.galleryItems.length} gallery photos`);
       if (data.restaurantInfo) parts.push("restaurant info");
-      if (data.newCategories.length) parts.push(`new categories: ${data.newCategories.join(", ")}`);
 
       toast.success(`Imported ${count} records — ${parts.join(", ")}`);
       onClose();
@@ -225,6 +284,17 @@ export default function ExcelImporter({ open, onClose }: Props) {
     }
   };
 
+  const handleDownloadTemplate = () => {
+    const buffer = generateTemplate();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "menu-import-template.xlsx";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
@@ -235,8 +305,8 @@ export default function ExcelImporter({ open, onClose }: Props) {
               Import Menu from Excel
             </DialogTitle>
             <DialogDescription className="text-muted-foreground text-sm">
-              Upload an .xlsx file. Each sheet name becomes a menu category. Special sheets:
-              <strong className="text-foreground"> Restaurant_Info</strong> and <strong className="text-foreground">Gallery</strong>.
+              Upload a single .xlsx file. Use the <strong className="text-foreground">Menu</strong> sheet with the columns below.
+              Optional sheets: <strong className="text-foreground">Gallery</strong> and <strong className="text-foreground">Restaurant_Info</strong>.
             </DialogDescription>
           </DialogHeader>
 
@@ -252,12 +322,22 @@ export default function ExcelImporter({ open, onClose }: Props) {
                   <Upload className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
                   <div className="text-center">
                     <p className="text-sm font-medium text-foreground">Click to upload .xlsx file</p>
-                    <p className="text-xs text-muted-foreground mt-1">Sheets: Mains · Sides · Drinks · Desserts · Specials · Gallery · Restaurant_Info</p>
+                    <p className="text-xs text-muted-foreground mt-1">Single sheet format — see template below</p>
                   </div>
                 </>
               )}
             </div>
             <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileSelect} />
+
+            <Button
+              variant="outline"
+              className="w-full gap-2 border-border hover:border-gold/40 hover:text-gold"
+              onClick={handleDownloadTemplate}
+              disabled={loading}
+            >
+              <Download className="w-4 h-4" />
+              Download Template (.xlsx)
+            </Button>
 
             <div className="relative flex items-center">
               <div className="flex-1 border-t border-border" />
@@ -272,14 +352,14 @@ export default function ExcelImporter({ open, onClose }: Props) {
               disabled={loading}
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FlaskConical className="w-4 h-4" />}
-              Load Mock Data (Ribeye, Salmon, Margaritas + Gallery)
+              Load Mock Data (Sample menu + Gallery)
             </Button>
 
             <div className="bg-secondary/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
-              <p className="font-semibold text-foreground text-xs">Excel Column Format (per sheet):</p>
-              <p>Menu sheets: <code className="bg-secondary px-1 rounded">name · description · price · image_url</code></p>
-              <p>Gallery sheet: <code className="bg-secondary px-1 rounded">image_url · caption</code></p>
-              <p>Restaurant_Info: <code className="bg-secondary px-1 rounded">Name · Address · Phone</code></p>
+              <p className="font-semibold text-foreground text-xs">Menu Sheet Columns (A–F):</p>
+              <p><code className="bg-secondary px-1 rounded">Name · Description · Price · Image_URL · Category · Service_Period</code></p>
+              <p className="pt-1">Valid <strong className="text-foreground">Category</strong> values: Breakfast, Lunch, Dinner, Sides, Drinks, Specials, Desserts</p>
+              <p>Valid <strong className="text-foreground">Service_Period</strong> values: Breakfast, Lunch, Dinner, All Day</p>
             </div>
           </div>
         </DialogContent>
@@ -295,11 +375,10 @@ export default function ExcelImporter({ open, onClose }: Props) {
             <AlertDialogDescription asChild>
               <div className="space-y-3 text-sm text-muted-foreground">
                 <p>
-                  This will overwrite your current menu. To avoid errors, ensure you are using the{" "}
-                  <strong className="text-foreground">official Gilded Table Template</strong>.
+                  This will <strong className="text-foreground">add</strong> items to your existing menu. To avoid duplicates, make sure the items in your file are not already on the menu.
                 </p>
                 <p>
-                  First time? We recommend doing a <strong className="text-foreground">manual upload</strong> for single items.
+                  Use the official <strong className="text-foreground">Download Template</strong> to ensure your file matches the required format.
                 </p>
                 <p>
                   Need help? Bulk imports are best handled by your{" "}

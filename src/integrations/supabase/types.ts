@@ -18,10 +18,13 @@ export type Database = {
         Row: {
           category: string
           created_at: string
+          daily_stock: number | null
           description: string | null
           id: string
           image_url: string | null
+          is_available: boolean
           is_placeholder: boolean
+          meal_period: string
           name: string
           price: number
           sort_order: number
@@ -30,10 +33,13 @@ export type Database = {
         Insert: {
           category?: string
           created_at?: string
+          daily_stock?: number | null
           description?: string | null
           id?: string
           image_url?: string | null
+          is_available?: boolean
           is_placeholder?: boolean
+          meal_period?: string
           name?: string
           price?: number
           sort_order?: number
@@ -42,10 +48,13 @@ export type Database = {
         Update: {
           category?: string
           created_at?: string
+          daily_stock?: number | null
           description?: string | null
           id?: string
           image_url?: string | null
+          is_available?: boolean
           is_placeholder?: boolean
+          meal_period?: string
           name?: string
           price?: number
           sort_order?: number
