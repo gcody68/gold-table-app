@@ -39,14 +39,17 @@ export default function AdminPanel() {
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [headerUrl, setHeaderUrl] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
   const [theme, setTheme] = useState<ThemeId>("midnight-gold");
   const [bgStyle, setBgStyle] = useState<BgStyleId>("deep-charcoal");
   const [uploading, setUploading] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [showImporter, setShowImporter] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const logoFileRef = useRef<HTMLInputElement>(null);
 
   const [paymentEnabled, setPaymentEnabled] = useState(false);
   const [stripePublicKey, setStripePublicKey] = useState("");
@@ -59,6 +62,7 @@ export default function AdminPanel() {
     setAddress(settings.business_address || "");
     setPhone(settings.business_phone || "");
     setHeaderUrl(settings.header_image_url || "");
+    setLogoUrl(settings.logo_url || "");
     setTheme((settings.theme as ThemeId) || "midnight-gold");
     setBgStyle((settings.bg_style as BgStyleId) || "deep-charcoal");
     setPaymentEnabled(settings.payment_enabled ?? false);
@@ -95,6 +99,20 @@ export default function AdminPanel() {
     }
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    try {
+      const url = await uploadImage(file, "headers");
+      setLogoUrl(url);
+    } catch {
+      toast.error("Logo upload failed");
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!settings) return;
     try {
@@ -104,6 +122,7 @@ export default function AdminPanel() {
         business_address: address,
         business_phone: phone,
         header_image_url: headerUrl || null,
+        logo_url: logoUrl || null,
         theme,
         bg_style: bgStyle,
         payment_enabled: paymentEnabled,
@@ -187,6 +206,47 @@ export default function AdminPanel() {
             <div>
               <Label className="text-muted-foreground text-xs">Phone</Label>
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="bg-secondary border-border" />
+            </div>
+
+            <div>
+              <Label className="text-muted-foreground text-xs">Business Logo</Label>
+              <p className="text-xs text-muted-foreground mb-1">Displayed in the navbar and order confirmation. If none, business name is shown.</p>
+              <div className="flex items-center gap-3 mt-1">
+                <div
+                  onClick={() => logoFileRef.current?.click()}
+                  className="w-24 h-24 rounded-lg bg-secondary border-2 border-dashed border-border hover:border-primary/40 cursor-pointer flex items-center justify-center overflow-hidden transition-colors flex-shrink-0"
+                >
+                  {uploadingLogo ? (
+                    <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                  ) : logoUrl ? (
+                    <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-1" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                      <ImagePlus className="w-5 h-5" />
+                      <span className="text-xs">Logo</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => logoFileRef.current?.click()}
+                    className="text-xs text-gold hover:text-gold/80 underline underline-offset-2 transition-colors text-left"
+                  >
+                    Upload Business Logo
+                  </button>
+                  {logoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setLogoUrl("")}
+                      className="text-xs text-muted-foreground hover:text-destructive transition-colors text-left"
+                    >
+                      Remove logo
+                    </button>
+                  )}
+                </div>
+              </div>
+              <input ref={logoFileRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
             </div>
 
             <div>

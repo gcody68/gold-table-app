@@ -17,9 +17,17 @@ export default function AppNavbar({ showAdmin, onToggleAdmin }: Props) {
     <>
       <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="container flex items-center justify-between h-14">
-          <span className="font-serif text-lg font-semibold text-gold truncate">
-            {settings?.business_name || "Restaurant"}
-          </span>
+          {settings?.logo_url ? (
+            <img
+              src={settings.logo_url}
+              alt={settings.business_name || "Logo"}
+              className="h-8 max-w-[160px] object-contain"
+            />
+          ) : (
+            <span className="font-serif text-lg font-semibold text-gold truncate" style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>
+              {settings?.business_name || "Restaurant"}
+            </span>
+          )}
           <div className="flex items-center gap-2">
             <button
               onClick={toggleLight}

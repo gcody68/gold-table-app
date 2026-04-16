@@ -144,7 +144,18 @@ export default function CartSidebar() {
 
         {step === "confirmation" ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center gap-4 px-4">
-            <CheckCircle2 className="w-16 h-16 text-gold" />
+            {settings?.logo_url ? (
+              <img
+                src={settings.logo_url}
+                alt={settings.business_name || "Logo"}
+                className="h-16 max-w-[200px] object-contain mb-2"
+              />
+            ) : (
+              <span className="font-serif text-2xl font-semibold text-gold" style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>
+                {settings?.business_name || "Restaurant"}
+              </span>
+            )}
+            <CheckCircle2 className="w-14 h-14 text-gold" />
             <h3 className="text-2xl font-serif font-bold text-foreground">Order Placed!</h3>
             <p className="text-muted-foreground leading-relaxed">
               {paymentEnabled

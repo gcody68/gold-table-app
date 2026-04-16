@@ -7,8 +7,14 @@ export type RestaurantSettings = {
   business_address: string | null;
   business_phone: string | null;
   header_image_url: string | null;
+  logo_url: string | null;
   theme: string;
   bg_style: string | null;
+  payment_enabled: boolean | null;
+  stripe_public_key: string | null;
+  stripe_secret_key: string | null;
+  kitchen_view_enabled: boolean | null;
+  show_gallery: boolean | null;
 };
 
 export function useRestaurantSettings() {
