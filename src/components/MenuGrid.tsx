@@ -4,19 +4,18 @@ import { useCart } from "@/contexts/CartContext";
 import { Plus, UtensilsCrossed, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 import MenuItemModal from "./MenuItemModal";
-import { toast } from "sonner";
+import OrderCustomizationModal from "./OrderCustomizationModal";
 
 export default function MenuGrid() {
   const { data: items, isLoading } = useMenuItems();
   const { isAdmin } = useAdmin();
-  const { addItem } = useCart();
+  const { setPendingItem, pendingItem } = useCart();
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [creatingCategory, setCreatingCategory] = useState<string | null>(null);
 
   const handleAddToCart = (e: React.MouseEvent, item: MenuItem) => {
     e.stopPropagation();
-    addItem(item);
-    toast.success(`${item.name} added to order`);
+    setPendingItem(item);
   };
 
   if (isLoading) {
@@ -135,6 +134,9 @@ export default function MenuGrid() {
           category={creatingCategory}
           onClose={() => setCreatingCategory(null)}
         />
+      )}
+      {pendingItem && (
+        <OrderCustomizationModal item={pendingItem} onClose={() => setPendingItem(null)} />
       )}
     </section>
   );

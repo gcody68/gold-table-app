@@ -1,6 +1,18 @@
 import { cn } from "@/lib/utils";
 
-export type BgStyleId = "true-black" | "deep-charcoal" | "midnight-navy" | "warm-slate" | "espresso" | "forest-dark" | "paper-white";
+export type BgStyleId =
+  | "true-black"
+  | "deep-charcoal"
+  | "midnight-navy"
+  | "warm-slate"
+  | "espresso"
+  | "forest-dark"
+  | "paper-white"
+  | "soft-cream"
+  | "cool-gray"
+  | "warm-stone"
+  | "sky-light"
+  | "mint-light";
 
 type BgStyle = {
   id: BgStyleId;
@@ -31,7 +43,7 @@ export const BG_STYLES: BgStyle[] = [
   },
   {
     id: "deep-charcoal",
-    name: "Deep Charcoal",
+    name: "Charcoal",
     swatch: "#1A1A1A",
     vars: {
       "--background": "0 0% 7%",
@@ -50,7 +62,7 @@ export const BG_STYLES: BgStyle[] = [
   },
   {
     id: "midnight-navy",
-    name: "Midnight Navy",
+    name: "Navy",
     swatch: "#0D1B2A",
     vars: {
       "--background": "215 45% 8%",
@@ -107,7 +119,7 @@ export const BG_STYLES: BgStyle[] = [
   },
   {
     id: "forest-dark",
-    name: "Forest Dark",
+    name: "Forest",
     swatch: "#0F1A14",
     vars: {
       "--background": "150 25% 7%",
@@ -126,7 +138,7 @@ export const BG_STYLES: BgStyle[] = [
   },
   {
     id: "paper-white",
-    name: "Paper White",
+    name: "Paper",
     swatch: "#F7F5F0",
     vars: {
       "--background": "40 20% 96%",
@@ -139,8 +151,103 @@ export const BG_STYLES: BgStyle[] = [
       "--secondary-foreground": "0 0% 22%",
       "--muted": "40 10% 92%",
       "--muted-foreground": "0 0% 42%",
-      "--border": "40 10% 85%",
-      "--input": "40 10% 85%",
+      "--border": "40 10% 82%",
+      "--input": "40 10% 82%",
+    },
+  },
+  {
+    id: "soft-cream",
+    name: "Soft Cream",
+    swatch: "#FDF6EC",
+    vars: {
+      "--background": "38 80% 97%",
+      "--foreground": "25 30% 12%",
+      "--card": "38 60% 100%",
+      "--card-foreground": "25 30% 12%",
+      "--popover": "38 60% 100%",
+      "--popover-foreground": "25 30% 12%",
+      "--secondary": "38 40% 93%",
+      "--secondary-foreground": "25 20% 25%",
+      "--muted": "38 40% 93%",
+      "--muted-foreground": "25 15% 45%",
+      "--border": "38 30% 85%",
+      "--input": "38 30% 85%",
+    },
+  },
+  {
+    id: "cool-gray",
+    name: "Cool Gray",
+    swatch: "#F0F2F5",
+    vars: {
+      "--background": "216 20% 96%",
+      "--foreground": "216 15% 12%",
+      "--card": "216 15% 100%",
+      "--card-foreground": "216 15% 12%",
+      "--popover": "216 15% 100%",
+      "--popover-foreground": "216 15% 12%",
+      "--secondary": "216 12% 91%",
+      "--secondary-foreground": "216 10% 25%",
+      "--muted": "216 12% 91%",
+      "--muted-foreground": "216 8% 45%",
+      "--border": "216 12% 82%",
+      "--input": "216 12% 82%",
+    },
+  },
+  {
+    id: "warm-stone",
+    name: "Warm Stone",
+    swatch: "#F5F0EB",
+    vars: {
+      "--background": "30 25% 95%",
+      "--foreground": "20 20% 12%",
+      "--card": "30 20% 100%",
+      "--card-foreground": "20 20% 12%",
+      "--popover": "30 20% 100%",
+      "--popover-foreground": "20 20% 12%",
+      "--secondary": "30 15% 90%",
+      "--secondary-foreground": "20 15% 25%",
+      "--muted": "30 15% 90%",
+      "--muted-foreground": "20 10% 45%",
+      "--border": "30 15% 82%",
+      "--input": "30 15% 82%",
+    },
+  },
+  {
+    id: "sky-light",
+    name: "Sky Light",
+    swatch: "#EBF5FB",
+    vars: {
+      "--background": "205 60% 96%",
+      "--foreground": "210 30% 12%",
+      "--card": "205 50% 100%",
+      "--card-foreground": "210 30% 12%",
+      "--popover": "205 50% 100%",
+      "--popover-foreground": "210 30% 12%",
+      "--secondary": "205 35% 91%",
+      "--secondary-foreground": "210 20% 25%",
+      "--muted": "205 35% 91%",
+      "--muted-foreground": "210 15% 45%",
+      "--border": "205 30% 82%",
+      "--input": "205 30% 82%",
+    },
+  },
+  {
+    id: "mint-light",
+    name: "Mint",
+    swatch: "#EDFAF4",
+    vars: {
+      "--background": "150 50% 96%",
+      "--foreground": "155 25% 12%",
+      "--card": "150 40% 100%",
+      "--card-foreground": "155 25% 12%",
+      "--popover": "150 40% 100%",
+      "--popover-foreground": "155 25% 12%",
+      "--secondary": "150 30% 91%",
+      "--secondary-foreground": "155 18% 25%",
+      "--muted": "150 30% 91%",
+      "--muted-foreground": "155 12% 45%",
+      "--border": "150 25% 82%",
+      "--input": "150 25% 82%",
     },
   },
 ];
@@ -162,33 +269,71 @@ type Props = {
 };
 
 export default function BackgroundStyleSelector({ value, onChange }: Props) {
+  const darkStyles = BG_STYLES.filter((s) =>
+    ["true-black", "deep-charcoal", "midnight-navy", "warm-slate", "espresso", "forest-dark"].includes(s.id)
+  );
+  const lightStyles = BG_STYLES.filter((s) =>
+    ["paper-white", "soft-cream", "cool-gray", "warm-stone", "sky-light", "mint-light"].includes(s.id)
+  );
+
   return (
-    <div>
-      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+    <div className="space-y-3">
+      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
         Background Style
       </h3>
-      <div className="grid grid-cols-7 gap-2">
-        {BG_STYLES.map((s) => (
-          <button
-            key={s.id}
-            onClick={() => onChange(s.id)}
-            title={s.name}
-            className={cn(
-              "flex flex-col items-center gap-1 p-1.5 rounded-lg transition-all",
-              value === s.id
-                ? "bg-secondary ring-2 ring-primary"
-                : "hover:bg-secondary/60"
-            )}
-          >
-            <div
-              className="w-7 h-7 rounded-full border-2 border-border shadow-sm"
-              style={{ backgroundColor: s.swatch }}
-            />
-            <span className="text-[9px] text-muted-foreground leading-tight text-center">
-              {s.name}
-            </span>
-          </button>
-        ))}
+
+      <div>
+        <p className="text-xs text-muted-foreground mb-2">Dark</p>
+        <div className="grid grid-cols-6 gap-2">
+          {darkStyles.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => onChange(s.id as BgStyleId)}
+              title={s.name}
+              className={cn(
+                "flex flex-col items-center gap-1 p-1.5 rounded-lg transition-all",
+                value === s.id
+                  ? "bg-secondary ring-2 ring-primary"
+                  : "hover:bg-secondary/60"
+              )}
+            >
+              <div
+                className="w-7 h-7 rounded-full border-2 border-border shadow-sm"
+                style={{ backgroundColor: s.swatch }}
+              />
+              <span className="text-[9px] text-muted-foreground leading-tight text-center">
+                {s.name}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="text-xs text-muted-foreground mb-2">Light</p>
+        <div className="grid grid-cols-6 gap-2">
+          {lightStyles.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => onChange(s.id as BgStyleId)}
+              title={s.name}
+              className={cn(
+                "flex flex-col items-center gap-1 p-1.5 rounded-lg transition-all",
+                value === s.id
+                  ? "bg-secondary ring-2 ring-primary"
+                  : "hover:bg-secondary/60"
+              )}
+            >
+              <div
+                className="w-7 h-7 rounded-full border-2 border-border shadow-sm"
+                style={{ backgroundColor: s.swatch }}
+              />
+              <span className="text-[9px] text-muted-foreground leading-tight text-center">
+                {s.name}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { AdminProvider, useAdmin } from "@/contexts/AdminContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { useRestaurantSettings } from "@/hooks/useRestaurantSettings";
 import { applyTheme, getThemeById } from "@/lib/themes";
+import { applyBgStyle, getBgStyleById } from "@/components/BackgroundStyleSelector";
 import AppNavbar from "@/components/AppNavbar";
 import HeroSection from "@/components/HeroSection";
 import MenuGrid from "@/components/MenuGrid";
@@ -18,10 +19,11 @@ function AppContent() {
   const { data: settings } = useRestaurantSettings();
 
   useEffect(() => {
-    if (settings?.theme) {
-      applyTheme(getThemeById(settings.theme));
+    if (settings) {
+      applyBgStyle(getBgStyleById(settings.bg_style || "deep-charcoal"));
+      applyTheme(getThemeById(settings.theme || "midnight-gold"));
     }
-  }, [settings?.theme]);
+  }, [settings?.theme, settings?.bg_style]);
 
   return (
     <div className="min-h-screen bg-background">

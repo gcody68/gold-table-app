@@ -60,6 +60,7 @@ export default function AdminPanel() {
     setPhone(settings.business_phone || "");
     setHeaderUrl(settings.header_image_url || "");
     setTheme((settings.theme as ThemeId) || "midnight-gold");
+    setBgStyle((settings.bg_style as BgStyleId) || "deep-charcoal");
     setPaymentEnabled(settings.payment_enabled ?? false);
     setStripePublicKey(settings.stripe_public_key || "");
     setStripeSecretKey(settings.stripe_secret_key || "");
@@ -71,11 +72,13 @@ export default function AdminPanel() {
   const handleThemeChange = (id: ThemeId) => {
     setTheme(id);
     applyTheme(getThemeById(id));
+    applyBgStyle(getBgStyleById(bgStyle));
   };
 
   const handleBgStyleChange = (id: BgStyleId) => {
     setBgStyle(id);
     applyBgStyle(getBgStyleById(id));
+    applyTheme(getThemeById(theme));
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,6 +105,7 @@ export default function AdminPanel() {
         business_phone: phone,
         header_image_url: headerUrl || null,
         theme,
+        bg_style: bgStyle,
         payment_enabled: paymentEnabled,
         stripe_public_key: stripePublicKey.trim() || null,
         stripe_secret_key: stripeSecretKey.trim() || null,

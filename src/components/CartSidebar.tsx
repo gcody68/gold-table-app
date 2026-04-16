@@ -6,33 +6,36 @@ import { Label } from "@/components/ui/label";
 import { useCart } from "@/contexts/CartContext";
 import { useRestaurantSettings } from "@/hooks/useRestaurantSettings";
 import { supabase } from "@/integrations/supabase/client";
-import { Minus, Plus, Trash2, ShoppingBag, Loader as Loader2, CircleCheck as CheckCircle2, CreditCard, Lock } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, Loader as Loader2, CircleCheck as CheckCircle2, CreditCard, Lock, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 
 type Step = "cart" | "checkout" | "payment" | "confirmation";
 
 export default function CartSidebar() {
-  const { items, updateQuantity, removeItem, clearCart, total, isOpen, setIsOpen } = useCart();
+  const { items, updateQuantity, removeItem, clearCart, total, isOpen, setIsOpen, customerInfo, setCustomerInfo } = useCart();
   const { data: settings } = useRestaurantSettings();
   const [step, setStep] = useState<Step>("cart");
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvc, setCardCvc] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [nameError, setNameError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
 
   const paymentEnabled = settings?.payment_enabled ?? false;
 
+  const validateCheckout = () => {
+    let valid = true;
+    if (!customerInfo.name.trim()) { setNameError("Name is required"); valid = false; }
+    else setNameError("");
+    if (!customerInfo.phone.trim()) { setPhoneError("Phone is required"); valid = false; }
+    else setPhoneError("");
+    return valid;
+  };
+
   const handlePlaceOrder = async () => {
-    if (!name.trim() || !phone.trim()) {
-      toast.error("Please fill in your name and phone number");
-      return;
-    }
-    if (paymentEnabled) {
-      setStep("payment");
-      return;
-    }
+    if (!validateCheckout()) return;
+    if (paymentEnabled) { setStep("payment"); return; }
     await submitOrder();
   };
 
@@ -44,12 +47,45 @@ export default function CartSidebar() {
     await submitOrder();
   };
 
+  const upsertCustomerLead = async () => {
+    if (!customerInfo.phone.trim()) return;
+    const { data: existing } = await supabase
+      .from("customer_leads")
+      .select("id, order_count")
+      .eq("phone", customerInfo.phone.trim())
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from("customer_leads")
+        .update({
+          name: customerInfo.name.trim(),
+          email: customerInfo.email.trim() || null,
+          last_order_date: new Date().toISOString(),
+          order_count: (existing.order_count || 1) + 1,
+        })
+        .eq("id", existing.id);
+    } else {
+      await supabase.from("customer_leads").insert({
+        name: customerInfo.name.trim(),
+        phone: customerInfo.phone.trim(),
+        email: customerInfo.email.trim() || null,
+      });
+    }
+  };
+
   const submitOrder = async () => {
     setSubmitting(true);
     try {
       const { data: order, error: orderErr } = await supabase
         .from("orders")
-        .insert({ customer_name: name.trim(), customer_phone: phone.trim(), total, status: "pending" })
+        .insert({
+          customer_name: customerInfo.name.trim(),
+          customer_phone: customerInfo.phone.trim(),
+          customer_email: customerInfo.email.trim() || null,
+          total,
+          status: "pending",
+        })
         .select("id")
         .single();
       if (orderErr) throw orderErr;
@@ -60,9 +96,12 @@ export default function CartSidebar() {
         menu_item_name: i.menuItem.name,
         price: Number(i.menuItem.price),
         quantity: i.quantity,
+        special_instructions: i.specialInstructions || null,
       }));
       const { error: itemsErr } = await supabase.from("order_items").insert(orderItems);
       if (itemsErr) throw itemsErr;
+
+      await upsertCustomerLead();
 
       setStep("confirmation");
       clearCart();
@@ -77,11 +116,11 @@ export default function CartSidebar() {
     setIsOpen(false);
     setTimeout(() => {
       setStep("cart");
-      setName("");
-      setPhone("");
       setCardNumber("");
       setCardExpiry("");
       setCardCvc("");
+      setNameError("");
+      setPhoneError("");
     }, 300);
   };
 
@@ -183,32 +222,69 @@ export default function CartSidebar() {
           </div>
 
         ) : step === "checkout" ? (
-          <div className="flex-1 flex flex-col gap-6 pt-4">
+          <div className="flex-1 flex flex-col gap-6 pt-4 overflow-y-auto">
             <div className="space-y-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Your Details</p>
               <div className="space-y-1">
-                <Label className="text-muted-foreground text-xs">Your Name</Label>
+                <Label className="text-muted-foreground text-xs">
+                  Name <span className="text-destructive">*</span>
+                </Label>
                 <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={customerInfo.name}
+                  onChange={(e) => { setCustomerInfo({ ...customerInfo, name: e.target.value }); setNameError(""); }}
                   placeholder="Enter your name"
-                  className="bg-secondary border-border"
+                  className={`bg-secondary border-border ${nameError ? "border-destructive" : ""}`}
                   autoFocus
                 />
+                {nameError && <p className="text-destructive text-xs">{nameError}</p>}
               </div>
               <div className="space-y-1">
-                <Label className="text-muted-foreground text-xs">Cell Phone Number</Label>
+                <Label className="text-muted-foreground text-xs">
+                  Phone Number <span className="text-destructive">*</span>
+                </Label>
                 <Input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  value={customerInfo.phone}
+                  onChange={(e) => { setCustomerInfo({ ...customerInfo, phone: e.target.value }); setPhoneError(""); }}
                   placeholder="(555) 123-4567"
-                  className="bg-secondary border-border"
+                  className={`bg-secondary border-border ${phoneError ? "border-destructive" : ""}`}
                   type="tel"
+                />
+                {phoneError && <p className="text-destructive text-xs">{phoneError}</p>}
+              </div>
+              <div className="space-y-1">
+                <Label className="text-muted-foreground text-xs">
+                  Email <span className="text-muted-foreground font-normal">(optional)</span>
+                </Label>
+                <Input
+                  value={customerInfo.email}
+                  onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
+                  placeholder="you@example.com"
+                  type="email"
+                  className="bg-secondary border-border"
                 />
               </div>
             </div>
 
-            <div className="border-t border-border pt-4">
-              <div className="flex justify-between text-lg font-semibold">
+            <div className="border-t border-border pt-4 space-y-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Order Summary</p>
+              {items.map((ci) => (
+                <div key={ci.menuItem.id} className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-foreground font-medium">
+                      <span className="text-gold font-semibold mr-1">{ci.quantity}×</span>
+                      {ci.menuItem.name}
+                    </span>
+                    <span className="text-muted-foreground">${(Number(ci.menuItem.price) * ci.quantity).toFixed(2)}</span>
+                  </div>
+                  {ci.specialInstructions && (
+                    <div className="flex items-start gap-1.5 ml-4">
+                      <MessageSquare className="w-3 h-3 text-gold mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-muted-foreground italic">{ci.specialInstructions}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+              <div className="flex justify-between text-lg font-semibold pt-2 border-t border-border">
                 <span className="text-foreground">Total</span>
                 <span className="text-gold">${total.toFixed(2)}</span>
               </div>
@@ -244,44 +320,58 @@ export default function CartSidebar() {
               <>
                 <div className="flex-1 overflow-y-auto space-y-3 pr-1">
                   {items.map((ci) => (
-                    <div key={ci.menuItem.id} className="flex items-center gap-3 bg-secondary rounded-lg p-3">
-                      {ci.menuItem.image_url && (
-                        <img
-                          src={ci.menuItem.image_url}
-                          alt={ci.menuItem.name}
-                          className="w-14 h-14 rounded-md object-cover flex-shrink-0"
-                        />
+                    <div key={ci.menuItem.id} className="bg-secondary rounded-lg p-3 space-y-2">
+                      <div className="flex items-center gap-3">
+                        {ci.menuItem.image_url && (
+                          <img
+                            src={ci.menuItem.image_url}
+                            alt={ci.menuItem.name}
+                            className="w-14 h-14 rounded-md object-cover flex-shrink-0"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-foreground text-sm truncate">{ci.menuItem.name}</p>
+                          <p className="text-gold text-sm">${Number(ci.menuItem.price).toFixed(2)}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => updateQuantity(ci.menuItem.id, ci.quantity - 1)}
+                            className="w-7 h-7 rounded-md bg-card flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+                          <span className="w-6 text-center text-sm font-medium text-foreground">{ci.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(ci.menuItem.id, ci.quantity + 1)}
+                            className="w-7 h-7 rounded-md bg-card flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => removeItem(ci.menuItem.id)}
+                            className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors ml-1"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      {ci.specialInstructions && (
+                        <div className="flex items-start gap-1.5 pl-1">
+                          <MessageSquare className="w-3 h-3 text-gold mt-0.5 flex-shrink-0" />
+                          <p className="text-xs text-muted-foreground italic">{ci.specialInstructions}</p>
+                        </div>
                       )}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground text-sm truncate">{ci.menuItem.name}</p>
-                        <p className="text-gold text-sm">${Number(ci.menuItem.price).toFixed(2)}</p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => updateQuantity(ci.menuItem.id, ci.quantity - 1)}
-                          className="w-7 h-7 rounded-md bg-card flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          <Minus className="w-3.5 h-3.5" />
-                        </button>
-                        <span className="w-6 text-center text-sm font-medium text-foreground">{ci.quantity}</span>
-                        <button
-                          onClick={() => updateQuantity(ci.menuItem.id, ci.quantity + 1)}
-                          className="w-7 h-7 rounded-md bg-card flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => removeItem(ci.menuItem.id)}
-                          className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors ml-1"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
                     </div>
                   ))}
                 </div>
 
                 <div className="border-t border-border pt-4 mt-4 space-y-3 pb-4">
+                  {customerInfo.name && (
+                    <div className="text-xs text-muted-foreground bg-secondary/50 rounded-md px-3 py-2">
+                      Ordering as <span className="font-semibold text-foreground">{customerInfo.name}</span>
+                      {customerInfo.phone && <> &middot; {customerInfo.phone}</>}
+                    </div>
+                  )}
                   <div className="flex justify-between text-lg font-semibold">
                     <span className="text-foreground">Total</span>
                     <span className="text-gold">${total.toFixed(2)}</span>

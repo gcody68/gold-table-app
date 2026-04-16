@@ -3,10 +3,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminProvider, useAdmin } from "@/contexts/AdminContext";
 import AdminLoginModal from "@/components/AdminLoginModal";
-import { Check, Clock, Phone, User, ChefHat } from "lucide-react";
+import { Check, Clock, Phone, User, ChefHat, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+
+type OrderItem = {
+  id: string;
+  menu_item_name: string;
+  quantity: number;
+  price: number;
+  special_instructions?: string | null;
+};
 
 type OrderWithItems = {
   id: string;
@@ -15,7 +23,7 @@ type OrderWithItems = {
   status: string;
   total: number;
   created_at: string;
-  order_items: { id: string; menu_item_name: string; quantity: number; price: number }[];
+  order_items: OrderItem[];
 };
 
 function KitchenBoard() {
@@ -34,7 +42,7 @@ function KitchenBoard() {
       if (error) throw error;
       return data as OrderWithItems[];
     },
-    refetchInterval: 5000, // poll every 5s for new orders
+    refetchInterval: 5000,
     enabled: isAdmin,
   });
 
@@ -105,49 +113,52 @@ function KitchenBoard() {
                 key={order.id}
                 className="bg-card border border-border rounded-lg overflow-hidden animate-fade-in"
               >
-                {/* Ticket header */}
                 <div className="bg-secondary px-4 py-3 border-b border-border">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-gold" />
-                      <span className="font-semibold text-foreground text-sm">{order.customer_name}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <Clock className="w-3 h-3" />
-                      <span className="text-xs">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(order.created_at), { addSuffix: true })}
                       </span>
                     </div>
+                    <span className="text-gold font-bold text-sm">${Number(order.total).toFixed(2)}</span>
                   </div>
-                  <div className="flex items-center gap-1 mt-1 text-muted-foreground">
-                    <Phone className="w-3 h-3" />
-                    <span className="text-xs">{order.customer_phone}</span>
+
+                  <div className="flex items-center gap-2 mb-1">
+                    <User className="w-4 h-4 text-gold flex-shrink-0" />
+                    <span className="font-bold text-foreground text-base leading-tight">{order.customer_name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-gold flex-shrink-0" />
+                    <span className="font-bold text-foreground text-base tracking-wide">{order.customer_phone}</span>
                   </div>
                 </div>
 
-                {/* Items */}
-                <div className="p-4 space-y-2">
+                <div className="p-4 space-y-3">
                   {order.order_items.map((oi) => (
-                    <div key={oi.id} className="flex justify-between text-sm">
-                      <span className="text-foreground">
-                        <span className="text-gold font-semibold mr-1">{oi.quantity}×</span>
-                        {oi.menu_item_name}
-                      </span>
-                      <span className="text-muted-foreground">${(oi.price * oi.quantity).toFixed(2)}</span>
+                    <div key={oi.id} className="space-y-1">
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-foreground font-semibold text-sm">
+                          <span className="text-gold font-bold text-base mr-1.5">{oi.quantity}×</span>
+                          {oi.menu_item_name}
+                        </span>
+                        <span className="text-muted-foreground text-xs">${(oi.price * oi.quantity).toFixed(2)}</span>
+                      </div>
+                      {oi.special_instructions && (
+                        <div className="flex items-start gap-1.5 ml-5 bg-gold/10 border border-gold/20 rounded-md px-2 py-1">
+                          <MessageSquare className="w-3 h-3 text-gold mt-0.5 flex-shrink-0" />
+                          <p className="text-xs font-semibold text-foreground leading-relaxed">{oi.special_instructions}</p>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
 
-                {/* Footer */}
-                <div className="px-4 pb-4 pt-2 border-t border-border">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-xs text-muted-foreground">Total</span>
-                    <span className="text-gold font-bold">${Number(order.total).toFixed(2)}</span>
-                  </div>
+                <div className="px-4 pb-4 pt-1 border-t border-border">
                   <Button
                     onClick={() => markReady.mutate(order.id)}
                     disabled={markReady.isPending}
-                    className="w-full bg-green-600 hover:bg-green-700 text-foreground font-semibold"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold text-sm h-10"
                   >
                     <Check className="w-4 h-4 mr-2" />
                     Mark as Ready
