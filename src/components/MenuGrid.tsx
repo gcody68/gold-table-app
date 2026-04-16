@@ -2,14 +2,21 @@ import {
   useMenuItems,
   CATEGORIES,
   ADMIN_ONLY_CATEGORIES,
+  SERVICE_PERIOD_CATEGORIES,
   type MenuItem,
   type MealPeriod,
 } from "@/hooks/useMenuItems";
 import { useMealPeriodConfig } from "@/hooks/useMealPeriodConfig";
 import { useAdmin } from "@/contexts/AdminContext";
 import { useCart } from "@/contexts/CartContext";
-import { Plus, UtensilsCrossed, ShoppingBag, Clock, ToggleLeft } from "lucide-react";
+import { Plus, UtensilsCrossed, ShoppingBag, Clock, ToggleLeft, Zap } from "lucide-react";
 import { useState, useMemo } from "react";
+
+const CATEGORY_TO_PERIOD: Record<string, MealPeriod> = {
+  Breakfast: "breakfast",
+  Lunch: "lunch",
+  Dinner: "dinner",
+};
 import MenuItemModal from "./MenuItemModal";
 import OrderCustomizationModal from "./OrderCustomizationModal";
 
@@ -108,8 +115,9 @@ export default function MenuGrid() {
   };
 
   const grouped = useMemo(() => {
-    return CATEGORIES.map((cat) => {
+    const groups = CATEGORIES.map((cat) => {
       const allCatItems = (items || []).filter((i) => i.category === cat);
+      const catPeriod: MealPeriod | null = CATEGORY_TO_PERIOD[cat] ?? null;
 
       let displayItems: MenuItem[];
       if (isAdmin) {
@@ -122,17 +130,52 @@ export default function MenuGrid() {
         displayItems = allCatItems;
       }
 
+      const isCatActive = catPeriod ? isPeriodActive(catPeriod) : true;
+      const periodStatus = catPeriod ? getPeriodStatus(catPeriod) : null;
+
       return {
         category: cat,
         items: displayItems,
         isAdminOnly: ADMIN_ONLY_CATEGORIES.includes(cat),
+        isActive: isCatActive,
+        categoryPeriod: catPeriod,
+        startsAt: periodStatus?.startLabel ?? "",
       };
     }).filter(({ items: catItems, isAdminOnly }) => {
       if (catItems.length > 0) return true;
       if (isAdminOnly) return isAdmin;
       return false;
     });
-  }, [items, isAdmin, unavailableDisplay, isPeriodActive]);
+
+    if (isAdmin) return groups;
+
+    const servicePeriodOrder: MealPeriod[] = ["breakfast", "lunch", "dinner"];
+    const currentIdx = servicePeriodOrder.indexOf(currentPeriod);
+
+    const serviceGroups = groups.filter((g) => g.categoryPeriod !== null);
+    const permanentGroups = groups.filter((g) => g.categoryPeriod === null);
+
+    const activeService = serviceGroups.filter((g) => g.isActive);
+    const upcomingService = serviceGroups
+      .filter((g) => !g.isActive && servicePeriodOrder.indexOf(g.categoryPeriod!) > currentIdx)
+      .sort((a, b) => servicePeriodOrder.indexOf(a.categoryPeriod!) - servicePeriodOrder.indexOf(b.categoryPeriod!));
+    const pastService = serviceGroups
+      .filter((g) => !g.isActive && servicePeriodOrder.indexOf(g.categoryPeriod!) < currentIdx)
+      .sort((a, b) => servicePeriodOrder.indexOf(a.categoryPeriod!) - servicePeriodOrder.indexOf(b.categoryPeriod!));
+
+    const sortedPermanent = permanentGroups.map((g) => ({
+      ...g,
+      isActive: g.items.some((i) => isPeriodActive(i.meal_period)),
+    }));
+
+    return [
+      ...activeService,
+      ...sortedPermanent.filter((g) => g.isActive),
+      ...upcomingService,
+      ...sortedPermanent.filter((g) => !g.isActive),
+      ...pastService,
+    ];
+  }, [items, isAdmin, unavailableDisplay, isPeriodActive, currentPeriod, getPeriodStatus]);
 
   if (isLoading) {
     return (
@@ -173,12 +216,31 @@ export default function MenuGrid() {
         )}
       </div>
 
-      {grouped.map(({ category, items: catItems, isAdminOnly }) => (
+      {grouped.map(({ category, items: catItems, isAdminOnly, isActive, categoryPeriod, startsAt }) => {
+        const sortedCatItems = isAdmin || !categoryPeriod
+          ? catItems
+          : [...catItems].sort((a, b) => {
+              const aActive = isPeriodActive(a.meal_period) ? 0 : 1;
+              const bActive = isPeriodActive(b.meal_period) ? 0 : 1;
+              return aActive - bActive;
+            });
+
+        return (
         <div key={category} id={`category-${category}`}>
-          <div className="flex items-center gap-3 mb-6 border-b border-border pb-2">
+          <div className="flex flex-wrap items-center gap-3 mb-6 border-b border-border pb-3">
             <h3 className="text-2xl font-serif font-semibold text-gold/80">
               {category}
             </h3>
+            {!isAdmin && isActive && categoryPeriod && (
+              <span className="inline-flex items-center gap-1 bg-gold/15 text-gold border border-gold/30 text-xs px-2.5 py-0.5 rounded-full font-semibold">
+                <Zap className="w-3 h-3" /> Serving Now
+              </span>
+            )}
+            {!isAdmin && !isActive && categoryPeriod && startsAt && (
+              <span className="inline-flex items-center gap-1 text-muted-foreground text-xs px-2 py-0.5 rounded-full border border-border">
+                <Clock className="w-3 h-3" /> Starts at {startsAt}
+              </span>
+            )}
             {isAdminOnly && catItems.length === 0 && (
               <span className="text-xs font-medium bg-gold/20 text-gold border border-gold/30 px-2 py-0.5 rounded-full">
                 Admin only · not visible to customers
@@ -186,7 +248,7 @@ export default function MenuGrid() {
             )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {catItems.map((item, i) => {
+            {sortedCatItems.map((item, i) => {
               const soldOut = isSoldOut(item);
               const periodStatus = getPeriodStatus(item.meal_period);
               const periodActive = isPeriodActive(item.meal_period);
@@ -227,7 +289,7 @@ export default function MenuGrid() {
                           Out of stock
                         </span>
                       )}
-                      {item.meal_period !== "all-day" && (
+                      {item.meal_period !== "all-day" && !SERVICE_PERIOD_CATEGORIES.includes(item.category as typeof SERVICE_PERIOD_CATEGORIES[number]) && (
                         <span className="bg-card/90 text-muted-foreground text-xs px-2 py-0.5 rounded">
                           {MEAL_PERIOD_LABELS[item.meal_period as MealPeriod]}
                         </span>
@@ -290,7 +352,8 @@ export default function MenuGrid() {
             )}
           </div>
         </div>
-      ))}
+        );
+      })}
 
       {editingItem && (
         <MenuItemModal item={editingItem} onClose={() => setEditingItem(null)} />

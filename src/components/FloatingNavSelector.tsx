@@ -1,14 +1,22 @@
-import { useMenuItems, CATEGORIES, ADMIN_ONLY_CATEGORIES } from "@/hooks/useMenuItems";
+import { useMenuItems, CATEGORIES, ADMIN_ONLY_CATEGORIES, type MealPeriod } from "@/hooks/useMenuItems";
+import { useMealPeriodConfig } from "@/hooks/useMealPeriodConfig";
 import { useCart } from "@/contexts/CartContext";
 import { useRestaurantSettings } from "@/hooks/useRestaurantSettings";
 import { useAdmin } from "@/contexts/AdminContext";
-import { ShoppingBag, Images } from "lucide-react";
+import { ShoppingBag, Images, Zap } from "lucide-react";
+
+const CATEGORY_TO_PERIOD: Record<string, MealPeriod> = {
+  Breakfast: "breakfast",
+  Lunch: "lunch",
+  Dinner: "dinner",
+};
 
 export default function FloatingNavSelector() {
   const { data: items } = useMenuItems();
   const { items: cartItems, setIsOpen } = useCart();
   const { data: settings } = useRestaurantSettings();
   const { isAdmin } = useAdmin();
+  const { currentPeriod, isPeriodActive } = useMealPeriodConfig();
 
   const categoriesWithItems = CATEGORIES.filter((cat) => {
     const hasItems = (items || []).some((i) => i.category === cat);
@@ -17,9 +25,38 @@ export default function FloatingNavSelector() {
     return false;
   });
 
+  const servicePeriodOrder: MealPeriod[] = ["breakfast", "lunch", "dinner"];
+  const currentIdx = servicePeriodOrder.indexOf(currentPeriod);
+
+  const sortedCategories = isAdmin
+    ? categoriesWithItems
+    : [...categoriesWithItems].sort((a, b) => {
+        const aPeriod = CATEGORY_TO_PERIOD[a] ?? null;
+        const bPeriod = CATEGORY_TO_PERIOD[b] ?? null;
+        const aIsService = aPeriod !== null;
+        const bIsService = bPeriod !== null;
+
+        if (aIsService && !bIsService) return isPeriodActive(aPeriod!) ? -1 : 1;
+        if (!aIsService && bIsService) return isPeriodActive(bPeriod!) ? 1 : -1;
+        if (!aIsService && !bIsService) return 0;
+
+        const aActive = isPeriodActive(aPeriod!);
+        const bActive = isPeriodActive(bPeriod!);
+        if (aActive && !bActive) return -1;
+        if (!aActive && bActive) return 1;
+
+        const aIdx = servicePeriodOrder.indexOf(aPeriod!);
+        const bIdx = servicePeriodOrder.indexOf(bPeriod!);
+        const aUpcoming = aIdx > currentIdx;
+        const bUpcoming = bIdx > currentIdx;
+        if (aUpcoming && !bUpcoming) return -1;
+        if (!aUpcoming && bUpcoming) return 1;
+        return aIdx - bIdx;
+      });
+
   const cartCount = cartItems.reduce((s, i) => s + i.quantity, 0);
 
-  if (categoriesWithItems.length === 0 && !settings?.show_gallery) return null;
+  if (sortedCategories.length === 0 && !settings?.show_gallery) return null;
 
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
@@ -28,15 +65,25 @@ export default function FloatingNavSelector() {
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1 bg-card/95 backdrop-blur-md border border-border rounded-full px-3 py-2 shadow-2xl">
-      {categoriesWithItems.map((cat) => (
-        <button
-          key={cat}
-          onClick={() => scrollTo(`category-${cat}`)}
-          className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-gold hover:bg-secondary rounded-full transition-all duration-200 whitespace-nowrap"
-        >
-          {cat}
-        </button>
-      ))}
+      {sortedCategories.map((cat) => {
+        const catPeriod = CATEGORY_TO_PERIOD[cat] ?? null;
+        const isActive = catPeriod ? isPeriodActive(catPeriod) : false;
+
+        return (
+          <button
+            key={cat}
+            onClick={() => scrollTo(`category-${cat}`)}
+            className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200 whitespace-nowrap ${
+              isActive
+                ? "text-gold bg-gold/10 border border-gold/20 font-semibold"
+                : "text-muted-foreground hover:text-gold hover:bg-secondary"
+            }`}
+          >
+            {isActive && <Zap className="w-2.5 h-2.5" />}
+            {cat}
+          </button>
+        );
+      })}
 
       {settings?.show_gallery && (
         <button

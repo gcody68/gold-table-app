@@ -32,7 +32,7 @@ export default function MenuItemModal(props: Props) {
   const [description, setDescription] = useState(item?.description || "");
   const [price, setPrice] = useState(item ? String(item.price) : "");
   const [imageUrl, setImageUrl] = useState(item?.image_url || "");
-  const [category, setCategory] = useState(item?.category || props.category || "Mains");
+  const [category, setCategory] = useState(item?.category || props.category || "Breakfast");
   const [mealPeriod, setMealPeriod] = useState<MealPeriod>(item?.meal_period ?? "all-day");
   const [isAvailable, setIsAvailable] = useState(item?.is_available ?? true);
   const [dailyStock, setDailyStock] = useState(item?.daily_stock != null ? String(item.daily_stock) : "");

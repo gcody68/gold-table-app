@@ -17,7 +17,9 @@ export type MenuItem = {
   daily_stock: number | null;
 };
 
-export const CATEGORIES = ["Mains", "Sides", "Drinks", "Specials", "Desserts"] as const;
+export const SERVICE_PERIOD_CATEGORIES = ["Breakfast", "Lunch", "Dinner"] as const;
+export const PERMANENT_CATEGORIES = ["Sides", "Drinks", "Specials", "Desserts"] as const;
+export const CATEGORIES = [...SERVICE_PERIOD_CATEGORIES, ...PERMANENT_CATEGORIES] as const;
 
 export const ADMIN_ONLY_CATEGORIES: string[] = ["Specials", "Desserts"];
 
