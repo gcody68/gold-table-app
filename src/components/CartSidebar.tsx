@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCart } from "@/contexts/CartContext";
 import { useRestaurantSettings } from "@/hooks/useRestaurantSettings";
+import { useDecrementStock } from "@/hooks/useMenuItems";
 import { supabase } from "@/integrations/supabase/client";
 import { Minus, Plus, Trash2, ShoppingBag, Loader as Loader2, CircleCheck as CheckCircle2, CreditCard, Lock, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
@@ -23,6 +24,7 @@ export default function CartSidebar() {
   const [phoneError, setPhoneError] = useState("");
 
   const paymentEnabled = settings?.payment_enabled ?? false;
+  const decrementStock = useDecrementStock();
 
   const validateCheckout = () => {
     let valid = true;
@@ -102,6 +104,13 @@ export default function CartSidebar() {
       if (itemsErr) throw itemsErr;
 
       await upsertCustomerLead();
+
+      const stockItems = items
+        .filter((i) => i.menuItem.daily_stock != null)
+        .map((i) => ({ id: i.menuItem.id, quantity: i.quantity }));
+      if (stockItems.length > 0) {
+        await decrementStock.mutateAsync(stockItems);
+      }
 
       setStep("confirmation");
       clearCart();

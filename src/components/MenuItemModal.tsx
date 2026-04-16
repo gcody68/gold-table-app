@@ -5,9 +5,18 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useUpsertMenuItem, useDeleteMenuItem, useCreateMenuItem, CATEGORIES, type MenuItem } from "@/hooks/useMenuItems";
+import { Switch } from "@/components/ui/switch";
+import {
+  useUpsertMenuItem,
+  useDeleteMenuItem,
+  useCreateMenuItem,
+  CATEGORIES,
+  MEAL_PERIODS,
+  type MenuItem,
+  type MealPeriod,
+} from "@/hooks/useMenuItems";
 import { uploadImage } from "@/hooks/useImageUpload";
-import { ImagePlus, Trash2, Loader2 } from "lucide-react";
+import { ImagePlus, Trash2, Loader as Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 type Props =
@@ -24,6 +33,9 @@ export default function MenuItemModal(props: Props) {
   const [price, setPrice] = useState(item ? String(item.price) : "");
   const [imageUrl, setImageUrl] = useState(item?.image_url || "");
   const [category, setCategory] = useState(item?.category || props.category || "Mains");
+  const [mealPeriod, setMealPeriod] = useState<MealPeriod>(item?.meal_period ?? "all-day");
+  const [isAvailable, setIsAvailable] = useState(item?.is_available ?? true);
+  const [dailyStock, setDailyStock] = useState(item?.daily_stock != null ? String(item.daily_stock) : "");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -50,6 +62,7 @@ export default function MenuItemModal(props: Props) {
       toast.error("Name is required");
       return;
     }
+    const parsedStock = dailyStock.trim() !== "" ? parseInt(dailyStock, 10) : null;
     try {
       if (isNew) {
         await create.mutateAsync({
@@ -58,6 +71,9 @@ export default function MenuItemModal(props: Props) {
           price: parseFloat(price) || 0,
           image_url: imageUrl || null,
           category,
+          meal_period: mealPeriod,
+          is_available: isAvailable,
+          daily_stock: parsedStock,
         });
       } else {
         await upsert.mutateAsync({
@@ -67,6 +83,9 @@ export default function MenuItemModal(props: Props) {
           price: parseFloat(price) || 0,
           image_url: imageUrl || null,
           category,
+          meal_period: mealPeriod,
+          is_available: isAvailable,
+          daily_stock: parsedStock,
         });
       }
       toast.success("Menu item saved!");
@@ -91,7 +110,7 @@ export default function MenuItemModal(props: Props) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="bg-card border-border max-w-md">
+      <DialogContent className="bg-card border-border max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-serif text-gold">
             {isNew ? "Add Menu Item" : "Edit Menu Item"}
@@ -122,18 +141,36 @@ export default function MenuItemModal(props: Props) {
             onChange={handleImageUpload}
           />
 
-          <div>
-            <Label className="text-muted-foreground text-xs">Category</Label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="bg-secondary border-border">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map((c) => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-muted-foreground text-xs">Category</Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger className="bg-secondary border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-muted-foreground text-xs">Meal Period</Label>
+              <Select value={mealPeriod} onValueChange={(v) => setMealPeriod(v as MealPeriod)}>
+                <SelectTrigger className="bg-secondary border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MEAL_PERIODS.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>
+                      {p.label} · {p.hours}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div>
@@ -149,6 +186,26 @@ export default function MenuItemModal(props: Props) {
           <div>
             <Label className="text-muted-foreground text-xs">Price ($)</Label>
             <Input type="number" step="0.01" min="0" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" className="bg-secondary border-border" />
+          </div>
+
+          <div>
+            <Label className="text-muted-foreground text-xs">Daily Stock (leave blank for unlimited)</Label>
+            <Input
+              type="number"
+              min="0"
+              value={dailyStock}
+              onChange={(e) => setDailyStock(e.target.value)}
+              placeholder="Unlimited"
+              className="bg-secondary border-border"
+            />
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/40 px-4 py-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">Available</p>
+              <p className="text-xs text-muted-foreground">Quickly disable this item without deleting it</p>
+            </div>
+            <Switch checked={isAvailable} onCheckedChange={setIsAvailable} />
           </div>
 
           <div className="flex gap-3 pt-2">
