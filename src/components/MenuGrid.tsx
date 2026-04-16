@@ -2,13 +2,10 @@ import {
   useMenuItems,
   CATEGORIES,
   ADMIN_ONLY_CATEGORIES,
-  MEAL_PERIODS,
-  getCurrentMealPeriod,
-  isMealPeriodActive,
-  getMealPeriodStartTime,
   type MenuItem,
   type MealPeriod,
 } from "@/hooks/useMenuItems";
+import { useMealPeriodConfig } from "@/hooks/useMealPeriodConfig";
 import { useAdmin } from "@/contexts/AdminContext";
 import { useCart } from "@/contexts/CartContext";
 import { Plus, UtensilsCrossed, ShoppingBag, Clock, ToggleLeft } from "lucide-react";
@@ -27,15 +24,36 @@ function isSoldOut(item: MenuItem): boolean {
   return !item.is_available || (item.daily_stock != null && item.daily_stock <= 0);
 }
 
+function CountdownBadge({ minutesLeft, periodLabel }: { minutesLeft: number; periodLabel: string }) {
+  if (minutesLeft > 15) return null;
+  const label =
+    minutesLeft <= 1
+      ? `${periodLabel} ends in less than a minute`
+      : `${periodLabel} ends in ${minutesLeft} min`;
+  return (
+    <span className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs px-2 py-0.5 rounded-full font-medium">
+      <Clock className="w-3 h-3" />
+      {label}
+    </span>
+  );
+}
+
 function AddToOrderButton({
   item,
+  periodLabel,
+  periodActive,
+  periodStartLabel,
+  minutesUntilEnd,
   onAdd,
 }: {
   item: MenuItem;
+  periodLabel: string;
+  periodActive: boolean;
+  periodStartLabel: string;
+  minutesUntilEnd: number | null;
   onAdd: (e: React.MouseEvent) => void;
 }) {
   const soldOut = isSoldOut(item);
-  const periodActive = isMealPeriodActive(item.meal_period);
 
   if (soldOut) {
     return (
@@ -49,25 +67,29 @@ function AddToOrderButton({
   }
 
   if (!periodActive) {
-    const startTime = getMealPeriodStartTime(item.meal_period);
     return (
       <button
         disabled
         className="w-full bg-secondary text-muted-foreground font-medium py-2.5 text-xs flex items-center justify-center gap-2 cursor-not-allowed rounded opacity-70"
       >
         <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-        Ordering begins at {startTime}
+        Available during {periodLabel} from {periodStartLabel}
       </button>
     );
   }
 
   return (
-    <button
-      onClick={onAdd}
-      className="w-full gradient-gold text-primary-foreground font-semibold py-2.5 text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity rounded"
-    >
-      <ShoppingBag className="w-4 h-4" /> Add to Order
-    </button>
+    <div className="space-y-1.5">
+      {minutesUntilEnd != null && minutesUntilEnd <= 15 && (
+        <CountdownBadge minutesLeft={minutesUntilEnd} periodLabel={periodLabel} />
+      )}
+      <button
+        onClick={onAdd}
+        className="w-full gradient-gold text-primary-foreground font-semibold py-2.5 text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity rounded"
+      >
+        <ShoppingBag className="w-4 h-4" /> Add to Order
+      </button>
+    </div>
   );
 }
 
@@ -78,7 +100,7 @@ export default function MenuGrid() {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [creatingCategory, setCreatingCategory] = useState<string | null>(null);
 
-  const currentPeriod = getCurrentMealPeriod();
+  const { currentPeriod, unavailableDisplay, getPeriodStatus, isPeriodActive } = useMealPeriodConfig();
 
   const handleAddToCart = (e: React.MouseEvent, item: MenuItem) => {
     e.stopPropagation();
@@ -88,12 +110,17 @@ export default function MenuGrid() {
   const grouped = useMemo(() => {
     return CATEGORIES.map((cat) => {
       const allCatItems = (items || []).filter((i) => i.category === cat);
-      const visibleItems = isAdmin
-        ? allCatItems
-        : allCatItems.filter(
-            (i) => i.is_available !== false && isMealPeriodActive(i.meal_period)
-          );
-      const displayItems = isAdmin ? allCatItems : visibleItems;
+
+      let displayItems: MenuItem[];
+      if (isAdmin) {
+        displayItems = allCatItems;
+      } else if (unavailableDisplay === "hide") {
+        displayItems = allCatItems.filter(
+          (i) => !isSoldOut(i) && isPeriodActive(i.meal_period)
+        );
+      } else {
+        displayItems = allCatItems;
+      }
 
       return {
         category: cat,
@@ -105,7 +132,7 @@ export default function MenuGrid() {
       if (isAdminOnly) return isAdmin;
       return false;
     });
-  }, [items, isAdmin]);
+  }, [items, isAdmin, unavailableDisplay, isPeriodActive]);
 
   if (isLoading) {
     return (
@@ -119,18 +146,30 @@ export default function MenuGrid() {
     );
   }
 
+  const currentStatus = getPeriodStatus(currentPeriod);
+  const currentPeriodLabel = MEAL_PERIOD_LABELS[currentPeriod];
+
   return (
     <section className="container py-12 space-y-12">
-      <div className="text-center">
-        <h2 className="text-3xl font-serif font-bold text-gold mb-2">
+      <div className="text-center space-y-2">
+        <h2 className="text-3xl font-serif font-bold text-gold">
           Our Menu
         </h2>
         {!isAdmin && (
-          <p className="text-sm text-muted-foreground">
-            Now serving: <span className="text-gold font-medium">{MEAL_PERIOD_LABELS[currentPeriod]}</span>
-            {" · "}
-            {MEAL_PERIODS.find((p) => p.value === currentPeriod)?.hours}
-          </p>
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-sm text-muted-foreground">
+              Now serving: <span className="text-gold font-medium">{currentPeriodLabel}</span>
+              {currentStatus.enabled && (
+                <span className="text-muted-foreground"> · until {currentStatus.endLabel}</span>
+              )}
+            </p>
+            {currentStatus.minutesUntilEnd != null && currentStatus.minutesUntilEnd <= 15 && (
+              <CountdownBadge
+                minutesLeft={currentStatus.minutesUntilEnd}
+                periodLabel={currentPeriodLabel}
+              />
+            )}
+          </div>
         )}
       </div>
 
@@ -149,13 +188,15 @@ export default function MenuGrid() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {catItems.map((item, i) => {
               const soldOut = isSoldOut(item);
-              const periodActive = isMealPeriodActive(item.meal_period);
-              const dimmed = !isAdmin && (soldOut || !periodActive);
+              const periodStatus = getPeriodStatus(item.meal_period);
+              const periodActive = isPeriodActive(item.meal_period);
+              const unavailable = !isAdmin && (soldOut || !periodActive);
+              const shouldDim = !isAdmin && unavailableDisplay === "gray" && unavailable;
 
               return (
                 <div
                   key={item.id}
-                  className={`group relative rounded-lg overflow-hidden bg-card border border-border hover:border-gold/30 transition-all duration-300 animate-fade-in cursor-default ${dimmed ? "opacity-60" : ""}`}
+                  className={`group relative rounded-lg overflow-hidden bg-card border border-border hover:border-gold/30 transition-all duration-300 animate-fade-in cursor-default ${shouldDim ? "opacity-50" : ""}`}
                   style={{ animationDelay: `${i * 60}ms` }}
                   onClick={() => isAdmin && setEditingItem(item)}
                 >
@@ -175,7 +216,7 @@ export default function MenuGrid() {
                   )}
 
                   {isAdmin && (
-                    <div className="absolute top-2 left-2 flex gap-1">
+                    <div className="absolute top-2 left-2 flex flex-wrap gap-1 max-w-[calc(100%-3rem)]">
                       {!item.is_available && (
                         <span className="bg-destructive/90 text-destructive-foreground text-xs px-2 py-0.5 rounded font-medium flex items-center gap-1">
                           <ToggleLeft className="w-3 h-3" /> Off
@@ -218,6 +259,10 @@ export default function MenuGrid() {
                     {!isAdmin && (
                       <AddToOrderButton
                         item={item}
+                        periodLabel={MEAL_PERIOD_LABELS[item.meal_period as MealPeriod]}
+                        periodActive={periodActive}
+                        periodStartLabel={periodStatus.startLabel}
+                        minutesUntilEnd={periodStatus.minutesUntilEnd}
                         onAdd={(e) => handleAddToCart(e, item)}
                       />
                     )}

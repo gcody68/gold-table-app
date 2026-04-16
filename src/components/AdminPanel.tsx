@@ -1,12 +1,12 @@
 import { useState, useRef } from "react";
-import { useRestaurantSettings, useUpdateSettings } from "@/hooks/useRestaurantSettings";
+import { useRestaurantSettings, useUpdateSettings, DEFAULT_SERVICE_HOURS, type ServiceHours } from "@/hooks/useRestaurantSettings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { uploadImage } from "@/hooks/useImageUpload";
 import { toast } from "sonner";
-import { Save, ImagePlus, Loader as Loader2, X, Trash2, CreditCard, Settings, Monitor, FileSpreadsheet, KeyRound } from "lucide-react";
+import { Save, ImagePlus, Loader as Loader2, X, Trash2, CreditCard, Settings, Monitor, FileSpreadsheet, KeyRound, Clock } from "lucide-react";
 import { useAdmin } from "@/contexts/AdminContext";
 import ThemeSelector from "@/components/ThemeSelector";
 import BackgroundStyleSelector, { type BgStyleId, applyBgStyle, getBgStyleById } from "@/components/BackgroundStyleSelector";
@@ -16,6 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { STARTER_ITEMS } from "@/components/StarterContent";
 import ExcelImporter from "@/components/ExcelImporter";
 import ChangePasswordModal from "@/components/ChangePasswordModal";
+import ServiceHoursTab from "@/components/ServiceHoursTab";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,6 +57,8 @@ export default function AdminPanel() {
   const [stripeSecretKey, setStripeSecretKey] = useState("");
   const [kitchenViewEnabled, setKitchenViewEnabled] = useState(true);
   const [showGallery, setShowGallery] = useState(false);
+  const [serviceHours, setServiceHours] = useState<ServiceHours>(DEFAULT_SERVICE_HOURS);
+  const [unavailableDisplay, setUnavailableDisplay] = useState<"hide" | "gray">("hide");
 
   if (settings && !initialized) {
     setName(settings.business_name);
@@ -70,6 +73,8 @@ export default function AdminPanel() {
     setStripeSecretKey(settings.stripe_secret_key || "");
     setKitchenViewEnabled(settings.kitchen_view_enabled ?? true);
     setShowGallery(settings.show_gallery ?? false);
+    setServiceHours(settings.service_hours ?? DEFAULT_SERVICE_HOURS);
+    setUnavailableDisplay(settings.unavailable_display === "gray" ? "gray" : "hide");
     setInitialized(true);
   }
 
@@ -130,6 +135,8 @@ export default function AdminPanel() {
         stripe_secret_key: stripeSecretKey.trim() || null,
         kitchen_view_enabled: kitchenViewEnabled,
         show_gallery: showGallery,
+        service_hours: serviceHours,
+        unavailable_display: unavailableDisplay,
       });
       toast.success("Settings saved!");
     } catch {
@@ -182,14 +189,17 @@ export default function AdminPanel() {
         </div>
 
         <Tabs defaultValue="branding">
-          <TabsList className="w-full mb-6 bg-secondary">
-            <TabsTrigger value="branding" className="flex-1 gap-1.5">
+          <TabsList className="w-full mb-6 bg-secondary grid grid-cols-4">
+            <TabsTrigger value="branding" className="gap-1.5">
               <Settings className="w-3.5 h-3.5" /> Branding
             </TabsTrigger>
-            <TabsTrigger value="payment" className="flex-1 gap-1.5">
+            <TabsTrigger value="hours" className="gap-1.5">
+              <Clock className="w-3.5 h-3.5" /> Hours
+            </TabsTrigger>
+            <TabsTrigger value="payment" className="gap-1.5">
               <CreditCard className="w-3.5 h-3.5" /> Payment
             </TabsTrigger>
-            <TabsTrigger value="kitchen" className="flex-1 gap-1.5">
+            <TabsTrigger value="kitchen" className="gap-1.5">
               <Monitor className="w-3.5 h-3.5" /> Kitchen
             </TabsTrigger>
           </TabsList>
@@ -322,6 +332,15 @@ export default function AdminPanel() {
             <p className="text-xs text-muted-foreground text-center">
               Tip: In admin mode, click any menu item to edit it.
             </p>
+          </TabsContent>
+
+          <TabsContent value="hours">
+            <ServiceHoursTab
+              serviceHours={serviceHours}
+              onChange={setServiceHours}
+              unavailableDisplay={unavailableDisplay}
+              onDisplayChange={setUnavailableDisplay}
+            />
           </TabsContent>
 
           <TabsContent value="payment" className="space-y-6">

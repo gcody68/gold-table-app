@@ -1,6 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export type ShiftConfig = {
+  enabled: boolean;
+  start: string;
+  end: string;
+};
+
+export type ServiceHours = {
+  breakfast: ShiftConfig;
+  lunch: ShiftConfig;
+  dinner: ShiftConfig;
+};
+
+export const DEFAULT_SERVICE_HOURS: ServiceHours = {
+  breakfast: { enabled: true, start: "06:00", end: "11:00" },
+  lunch: { enabled: true, start: "11:00", end: "16:00" },
+  dinner: { enabled: true, start: "16:00", end: "23:00" },
+};
+
 export type RestaurantSettings = {
   id: string;
   business_name: string;
@@ -15,6 +33,8 @@ export type RestaurantSettings = {
   stripe_secret_key: string | null;
   kitchen_view_enabled: boolean | null;
   show_gallery: boolean | null;
+  service_hours: ServiceHours | null;
+  unavailable_display: "hide" | "gray" | null;
 };
 
 export function useRestaurantSettings() {
