@@ -68,8 +68,9 @@ function AddToOrderButton({
   );
 }
 
-export default function DemoMenuGrid() {
-  const { menuItems, isAdmin } = useDemo();
+export default function DemoMenuGrid({ forceCustomer = false }: { forceCustomer?: boolean }) {
+  const { menuItems, isAdmin: contextIsAdmin } = useDemo();
+  const isAdmin = forceCustomer ? false : contextIsAdmin;
   const { setPendingItem } = useCart();
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [creatingCategory, setCreatingCategory] = useState<string | null>(null);

@@ -20,8 +20,8 @@ export default function DemoAdminPanel() {
   const [name, setName] = useState(settings.business_name);
   const [address, setAddress] = useState(settings.business_address ?? "");
   const [phone, setPhone] = useState(settings.business_phone ?? "");
-  const [theme, setTheme] = useState<ThemeId>((settings.theme as ThemeId) ?? "midnight-gold");
-  const [bgStyle, setBgStyle] = useState<BgStyleId>((settings.bg_style as BgStyleId) ?? "deep-charcoal");
+  const [theme, setTheme] = useState<ThemeId>((settings.theme as ThemeId) ?? "sunwashed-citrus");
+  const [bgStyle, setBgStyle] = useState<BgStyleId>((settings.bg_style as BgStyleId) ?? "forest-dark");
   const [showGallery, setShowGallery] = useState(settings.show_gallery ?? false);
   const [serviceHours, setServiceHours] = useState<ServiceHours>(settings.service_hours ?? DEFAULT_SERVICE_HOURS);
   const [unavailableDisplay, setUnavailableDisplay] = useState<"hide" | "gray">(settings.unavailable_display ?? "hide");

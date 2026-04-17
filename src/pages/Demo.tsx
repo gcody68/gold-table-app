@@ -11,7 +11,7 @@ import CartFAB from "@/components/CartFAB";
 import CartSidebar from "@/components/CartSidebar";
 import OrderCustomizationModal from "@/components/OrderCustomizationModal";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, RotateCcw, Smartphone, UtensilsCrossed, Users, Wifi, ShoppingBag, Clock, CircleCheck as CheckCircle2 } from "lucide-react";
+import { ArrowLeft, RotateCcw, Smartphone, UtensilsCrossed, Users, Wifi, ShoppingBag, Clock, CircleCheck as CheckCircle2, Settings } from "lucide-react";
 import heroDefault from "@/assets/hero-restaurant.jpg";
 import { MapPin, Phone } from "lucide-react";
 
@@ -44,7 +44,7 @@ function DemoHeroSection() {
   );
 }
 
-type PhoneView = "customer" | "kitchen";
+type PhoneView = "admin" | "customer" | "kitchen";
 
 function KitchenView() {
   const { cartItems } = useCart() as any;
@@ -145,7 +145,7 @@ function KitchenView() {
 
 function MobileFrame() {
   const { menuItems, phoneHighlight, markStepComplete } = useDemo();
-  const [phoneView, setPhoneView] = useState<PhoneView>("customer");
+  const [phoneView, setPhoneView] = useState<PhoneView>("admin");
 
   const handleCustomerClick = () => {
     setPhoneView("customer");
@@ -156,10 +156,20 @@ function MobileFrame() {
     <div className={`flex flex-col h-full transition-all duration-500 ${
       phoneHighlight ? "brightness-110" : ""
     }`}>
-      <div className="flex items-center gap-1 px-3 py-2 border-b border-border bg-card/90 flex-shrink-0">
+      <div className="flex items-center gap-0.5 px-2 py-2 border-b border-border bg-card/90 flex-shrink-0">
+        <button
+          onClick={() => setPhoneView("admin")}
+          className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full border transition-all flex-1 justify-center ${
+            phoneView === "admin"
+              ? "bg-gold/20 text-gold border-gold/40 font-semibold"
+              : "bg-transparent text-muted-foreground border-border hover:text-foreground"
+          }`}
+        >
+          <Settings className="w-3 h-3" /> Admin
+        </button>
         <button
           onClick={handleCustomerClick}
-          className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all flex-1 justify-center ${
+          className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full border transition-all flex-1 justify-center ${
             phoneView === "customer"
               ? "bg-gold/20 text-gold border-gold/40 font-semibold"
               : "bg-transparent text-muted-foreground border-border hover:text-foreground"
@@ -169,7 +179,7 @@ function MobileFrame() {
         </button>
         <button
           onClick={() => setPhoneView("kitchen")}
-          className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all flex-1 justify-center ${
+          className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full border transition-all flex-1 justify-center ${
             phoneView === "kitchen"
               ? "bg-gold/20 text-gold border-gold/40 font-semibold"
               : "bg-transparent text-muted-foreground border-border hover:text-foreground"
@@ -180,7 +190,7 @@ function MobileFrame() {
       </div>
 
       <div className="flex-1 overflow-y-auto bg-background">
-        {phoneView === "customer" ? (
+        {phoneView === "admin" && (
           <>
             <DemoHeroSection />
             <div className="px-3">
@@ -194,9 +204,23 @@ function MobileFrame() {
               </div>
             )}
           </>
-        ) : (
-          <KitchenView />
         )}
+        {phoneView === "customer" && (
+          <>
+            <DemoHeroSection />
+            <div className="px-3">
+              <DemoMenuGrid forceCustomer />
+            </div>
+            {menuItems.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground px-4">
+                <ShoppingBag className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">No menu items yet.</p>
+                <p className="text-xs mt-1">Use "Load Sample Menu" in the Menu tab.</p>
+              </div>
+            )}
+          </>
+        )}
+        {phoneView === "kitchen" && <KitchenView />}
       </div>
 
       {phoneView === "customer" && (
@@ -247,8 +271,8 @@ function DemoContent() {
   const { pendingItem } = useCart();
 
   useEffect(() => {
-    applyBgStyle(getBgStyleById((settings.bg_style as any) ?? "deep-charcoal"));
-    applyTheme(getThemeById((settings.theme as any) ?? "midnight-gold"));
+    applyBgStyle(getBgStyleById((settings.bg_style as any) ?? "forest-dark"));
+    applyTheme(getThemeById((settings.theme as any) ?? "sunwashed-citrus"));
   }, [settings.theme, settings.bg_style]);
 
   return (
