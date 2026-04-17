@@ -9,14 +9,13 @@ import ThemeSelector from "@/components/ThemeSelector";
 import BackgroundStyleSelector, { type BgStyleId, applyBgStyle, getBgStyleById } from "@/components/BackgroundStyleSelector";
 import { type ThemeId, applyTheme, getThemeById } from "@/lib/themes";
 import { toast } from "sonner";
-import { Settings, Clock, FileSpreadsheet, Save } from "lucide-react";
+import { Settings, Clock, FileSpreadsheet, Save, Sparkles } from "lucide-react";
 import ServiceHoursTab from "@/components/ServiceHoursTab";
 import { type ServiceHours, DEFAULT_SERVICE_HOURS } from "@/hooks/useRestaurantSettings";
-import ExcelImporter from "@/components/ExcelImporter";
 import DemoExcelImporter from "./DemoExcelImporter";
 
 export default function DemoAdminPanel() {
-  const { settings, updateSettings } = useDemo();
+  const { settings, updateSettings, loadSampleMenu, menuItems } = useDemo();
 
   const [name, setName] = useState(settings.business_name);
   const [address, setAddress] = useState(settings.business_address ?? "");
@@ -27,17 +26,20 @@ export default function DemoAdminPanel() {
   const [serviceHours, setServiceHours] = useState<ServiceHours>(settings.service_hours ?? DEFAULT_SERVICE_HOURS);
   const [unavailableDisplay, setUnavailableDisplay] = useState<"hide" | "gray">(settings.unavailable_display ?? "hide");
   const [showImporter, setShowImporter] = useState(false);
+  const [loadingMenu, setLoadingMenu] = useState(false);
 
   const handleThemeChange = (id: ThemeId) => {
     setTheme(id);
     applyTheme(getThemeById(id));
     applyBgStyle(getBgStyleById(bgStyle));
+    updateSettings({ theme: id });
   };
 
   const handleBgStyleChange = (id: BgStyleId) => {
     setBgStyle(id);
     applyBgStyle(getBgStyleById(id));
     applyTheme(getThemeById(theme));
+    updateSettings({ bg_style: id });
   };
 
   const handleSave = () => {
@@ -51,57 +53,66 @@ export default function DemoAdminPanel() {
       service_hours: serviceHours,
       unavailable_display: unavailableDisplay,
     });
-    toast.success("Settings saved in demo!");
+    toast.success("Settings saved!");
+  };
+
+  const handleLoadSampleMenu = () => {
+    setLoadingMenu(true);
+    setTimeout(() => {
+      loadSampleMenu();
+      setLoadingMenu(false);
+      toast.success("Sample menu loaded — 14 items across Breakfast, Lunch, Dinner, Sides & Drinks!");
+    }, 400);
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-5 h-full overflow-y-auto">
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-xl font-serif font-bold text-gold">Admin Dashboard</h2>
-        <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-full border border-border">
-          Demo Mode
+    <div className="bg-card border border-border rounded-xl p-4 h-full overflow-y-auto">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-base font-serif font-bold text-gold">Admin Dashboard</h2>
+        <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full border border-border">
+          Demo
         </span>
       </div>
 
       <Tabs defaultValue="branding">
-        <TabsList className="w-full mb-5 bg-secondary grid grid-cols-3">
-          <TabsTrigger value="branding" className="gap-1.5 text-xs">
-            <Settings className="w-3.5 h-3.5" /> Branding
+        <TabsList className="w-full mb-4 bg-secondary grid grid-cols-3">
+          <TabsTrigger value="branding" className="gap-1 text-xs py-1.5">
+            <Settings className="w-3 h-3" /> Branding
           </TabsTrigger>
-          <TabsTrigger value="hours" className="gap-1.5 text-xs">
-            <Clock className="w-3.5 h-3.5" /> Hours
+          <TabsTrigger value="hours" className="gap-1 text-xs py-1.5">
+            <Clock className="w-3 h-3" /> Hours
           </TabsTrigger>
-          <TabsTrigger value="import" className="gap-1.5 text-xs">
-            <FileSpreadsheet className="w-3.5 h-3.5" /> Import
+          <TabsTrigger value="import" className="gap-1 text-xs py-1.5">
+            <FileSpreadsheet className="w-3 h-3" /> Menu
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="branding" className="space-y-5">
+        <TabsContent value="branding" className="space-y-4">
           <div>
             <Label className="text-muted-foreground text-xs">Restaurant Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} className="bg-secondary border-border mt-1" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} className="bg-secondary border-border mt-1 h-8 text-sm" />
           </div>
           <div>
             <Label className="text-muted-foreground text-xs">Address</Label>
-            <Input value={address} onChange={(e) => setAddress(e.target.value)} className="bg-secondary border-border mt-1" />
+            <Input value={address} onChange={(e) => setAddress(e.target.value)} className="bg-secondary border-border mt-1 h-8 text-sm" />
           </div>
           <div>
             <Label className="text-muted-foreground text-xs">Phone</Label>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="bg-secondary border-border mt-1" />
+            <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="bg-secondary border-border mt-1 h-8 text-sm" />
           </div>
 
-          <div className="flex items-center justify-between py-2 border border-border rounded-lg px-4">
+          <div className="flex items-center justify-between py-2 border border-border rounded-lg px-3">
             <div>
-              <p className="text-sm font-medium text-foreground">Show Gallery</p>
-              <p className="text-xs text-muted-foreground">Display photo gallery</p>
+              <p className="text-xs font-medium text-foreground">Show Gallery</p>
+              <p className="text-xs text-muted-foreground">Photo gallery section</p>
             </div>
             <Switch checked={showGallery} onCheckedChange={setShowGallery} />
           </div>
 
-          <div className="flex items-center justify-between py-2 border border-border rounded-lg px-4">
+          <div className="flex items-center justify-between py-2 border border-border rounded-lg px-3">
             <div>
-              <p className="text-sm font-medium text-foreground">Unavailable Items</p>
-              <p className="text-xs text-muted-foreground">Hide or grey them out</p>
+              <p className="text-xs font-medium text-foreground">Unavailable Items</p>
+              <p className="text-xs text-muted-foreground">Grey out vs. hide</p>
             </div>
             <Switch
               checked={unavailableDisplay === "gray"}
@@ -114,8 +125,8 @@ export default function DemoAdminPanel() {
           <div className="border-b border-border" />
           <BackgroundStyleSelector value={bgStyle} onChange={handleBgStyleChange} />
 
-          <Button onClick={handleSave} className="w-full gradient-gold text-primary-foreground font-semibold gap-2">
-            <Save className="w-4 h-4" /> Save Settings
+          <Button onClick={handleSave} size="sm" className="w-full gradient-gold text-primary-foreground font-semibold gap-1.5 h-8 text-xs">
+            <Save className="w-3.5 h-3.5" /> Save Settings
           </Button>
         </TabsContent>
 
@@ -126,23 +137,49 @@ export default function DemoAdminPanel() {
             onChange={(hours) => setServiceHours(hours)}
             onDisplayChange={(v) => setUnavailableDisplay(v)}
           />
-          <Button onClick={handleSave} className="w-full gradient-gold text-primary-foreground font-semibold gap-2 mt-4">
-            <Save className="w-4 h-4" /> Save Hours
+          <Button onClick={handleSave} size="sm" className="w-full gradient-gold text-primary-foreground font-semibold gap-1.5 h-8 text-xs mt-4">
+            <Save className="w-3.5 h-3.5" /> Save Hours
           </Button>
         </TabsContent>
 
-        <TabsContent value="import">
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Import menu items from an Excel file. In the demo, items are saved to your browser — no production database is touched.
+        <TabsContent value="import" className="space-y-3">
+          <div className="rounded-lg border border-gold/25 bg-gold/5 p-3">
+            <p className="text-xs font-semibold text-gold mb-1 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" /> Quick Start
+            </p>
+            <p className="text-xs text-muted-foreground mb-3">
+              Instantly populate 14 sample items across Breakfast, Lunch, Dinner, Sides, and Drinks categories.
+            </p>
+            <Button
+              onClick={handleLoadSampleMenu}
+              disabled={loadingMenu}
+              className="w-full gradient-gold text-primary-foreground font-semibold text-xs h-8 gap-1.5"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              {loadingMenu ? "Loading..." : "Load Sample Menu"}
+            </Button>
+            {menuItems.length > 0 && (
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                {menuItems.length} item{menuItems.length !== 1 ? "s" : ""} currently in demo
+              </p>
+            )}
+          </div>
+
+          <div className="border-b border-border" />
+
+          <div>
+            <p className="text-xs font-medium text-foreground mb-1">Import from Excel</p>
+            <p className="text-xs text-muted-foreground mb-2">
+              Have your own spreadsheet? Upload a .xlsx file to populate the demo menu.
             </p>
             <Button
               variant="outline"
-              className="w-full gap-2 border-border"
+              size="sm"
+              className="w-full gap-1.5 border-border text-xs h-8"
               onClick={() => setShowImporter(true)}
             >
-              <FileSpreadsheet className="w-4 h-4" />
-              Import from Excel (Demo)
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              Import from Excel
             </Button>
           </div>
         </TabsContent>

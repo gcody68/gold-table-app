@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from "react";
 import type { MenuItem, MealPeriod } from "@/hooks/useMenuItems";
 import type { RestaurantSettings } from "@/hooks/useRestaurantSettings";
 import { DEFAULT_SERVICE_HOURS } from "@/hooks/useRestaurantSettings";
@@ -68,6 +68,8 @@ function saveToStorage<T>(key: string, value: T): void {
   } catch {}
 }
 
+export type DemoStep = "branding" | "menu" | "ordering";
+
 type DemoContextType = {
   guestId: string;
   menuItems: MenuItem[];
@@ -79,6 +81,11 @@ type DemoContextType = {
   updateMenuItem: (id: string, updates: Partial<MenuItem>) => void;
   deleteMenuItem: (id: string) => void;
   resetDemo: () => void;
+  loadSampleMenu: () => void;
+  completedSteps: Set<DemoStep>;
+  markStepComplete: (step: DemoStep) => void;
+  syncPulse: boolean;
+  phoneHighlight: boolean;
 };
 
 const DemoContext = createContext<DemoContextType | null>(null);
@@ -93,6 +100,11 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     loadFromStorage<RestaurantSettings>(DEMO_SETTINGS_KEY, DEFAULT_DEMO_SETTINGS)
   );
   const [isAdmin, setIsAdmin] = useState(true);
+  const [completedSteps, setCompletedSteps] = useState<Set<DemoStep>>(new Set());
+  const [syncPulse, setSyncPulse] = useState(false);
+  const [phoneHighlight, setPhoneHighlight] = useState(false);
+  const pulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     saveToStorage(DEMO_MENU_KEY, menuItems);
@@ -102,9 +114,28 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     saveToStorage(DEMO_SETTINGS_KEY, settings);
   }, [settings]);
 
+  const triggerSync = useCallback(() => {
+    setSyncPulse(true);
+    if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
+    pulseTimerRef.current = setTimeout(() => setSyncPulse(false), 1200);
+  }, []);
+
+  const triggerHighlight = useCallback(() => {
+    setPhoneHighlight(true);
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    highlightTimerRef.current = setTimeout(() => setPhoneHighlight(false), 1000);
+  }, []);
+
   const updateSettings = useCallback((updates: Partial<RestaurantSettings>) => {
     setSettings((prev) => ({ ...prev, ...updates }));
-  }, []);
+    triggerSync();
+    if (updates.theme || updates.bg_style) {
+      triggerHighlight();
+    }
+    if (updates.business_name || updates.header_image_url) {
+      setCompletedSteps((prev) => new Set([...prev, "branding" as DemoStep]));
+    }
+  }, [triggerSync, triggerHighlight]);
 
   const createMenuItem = useCallback((item: Omit<MenuItem, "id" | "sort_order" | "is_placeholder">) => {
     const newItem: MenuItem = {
@@ -114,20 +145,37 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       is_placeholder: false,
     };
     setMenuItems((prev) => [...prev, newItem]);
-  }, []);
+    triggerSync();
+    setCompletedSteps((prev) => new Set([...prev, "menu" as DemoStep]));
+  }, [triggerSync]);
 
   const updateMenuItem = useCallback((id: string, updates: Partial<MenuItem>) => {
     setMenuItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...updates } : item)));
-  }, []);
+    triggerSync();
+  }, [triggerSync]);
 
   const deleteMenuItem = useCallback((id: string) => {
     setMenuItems((prev) => prev.filter((item) => item.id !== id));
+    triggerSync();
+  }, [triggerSync]);
+
+  const loadSampleMenu = useCallback(() => {
+    const fresh = buildDefaultMenuItems();
+    setMenuItems(fresh);
+    triggerSync();
+    triggerHighlight();
+    setCompletedSteps((prev) => new Set([...prev, "menu" as DemoStep]));
+  }, [triggerSync, triggerHighlight]);
+
+  const markStepComplete = useCallback((step: DemoStep) => {
+    setCompletedSteps((prev) => new Set([...prev, step]));
   }, []);
 
   const resetDemo = useCallback(() => {
     const freshItems = buildDefaultMenuItems();
     setMenuItems(freshItems);
     setSettings(DEFAULT_DEMO_SETTINGS);
+    setCompletedSteps(new Set());
     localStorage.removeItem(DEMO_MENU_KEY);
     localStorage.removeItem(DEMO_SETTINGS_KEY);
     localStorage.removeItem(DEMO_GUEST_ID_KEY);
@@ -145,6 +193,11 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       updateMenuItem,
       deleteMenuItem,
       resetDemo,
+      loadSampleMenu,
+      completedSteps,
+      markStepComplete,
+      syncPulse,
+      phoneHighlight,
     }}>
       {children}
     </DemoContext.Provider>
