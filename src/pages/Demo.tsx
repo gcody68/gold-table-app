@@ -8,10 +8,9 @@ import DemoAdminPanel from "@/components/demo/DemoAdminPanel";
 import DemoMenuGrid from "@/components/demo/DemoMenuGrid";
 import GuidePanel from "@/components/demo/GuidePanel";
 import CartFAB from "@/components/CartFAB";
-import DemoCartSidebar from "@/components/demo/DemoCartSidebar";
 import DemoOrderCustomizationModal from "@/components/demo/DemoOrderCustomizationModal";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, RotateCcw, Smartphone, UtensilsCrossed, Users, Wifi, ShoppingBag, Clock, CircleCheck as CheckCircle2, Settings } from "lucide-react";
+import { ArrowLeft, RotateCcw, Smartphone, UtensilsCrossed, Users, Wifi, ShoppingBag, Clock, CircleCheck as CheckCircle2, Settings, Minus, Plus, Trash2, MessageSquare } from "lucide-react";
 import heroDefault from "@/assets/hero-restaurant.jpg";
 import { MapPin, Phone } from "lucide-react";
 
@@ -44,7 +43,7 @@ function DemoHeroSection() {
   );
 }
 
-type PhoneView = "admin" | "customer" | "kitchen";
+type PhoneView = "admin" | "customer" | "cart" | "kitchen";
 
 function KitchenView() {
   const { demoOrders, updateDemoOrderStatus } = useDemo();
@@ -142,9 +141,227 @@ function KitchenView() {
   );
 }
 
+function InlineCartView({ onGoToCustomer, onGoToKitchen }: { onGoToCustomer: () => void; onGoToKitchen: () => void }) {
+  const { items, updateQuantity, removeItem, clearCart, total, customerInfo, setCustomerInfo } = useCart();
+  const { settings, addDemoOrder } = useDemo();
+  const [step, setStep] = useState<"cart" | "checkout" | "confirmation">("cart");
+  const [submitting, setSubmitting] = useState(false);
+  const [localName, setLocalName] = useState(customerInfo.name);
+  const [localPhone, setLocalPhone] = useState(customerInfo.phone);
+  const [localEmail, setLocalEmail] = useState(customerInfo.email);
+  const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
+
+  const validate = () => {
+    const errs: { name?: string; phone?: string } = {};
+    if (!localName.trim()) errs.name = "Name is required";
+    if (!localPhone.trim()) errs.phone = "Phone number is required";
+    return errs;
+  };
+
+  const handlePlaceOrder = async () => {
+    const errs = validate();
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    setSubmitting(true);
+    setCustomerInfo({ name: localName.trim(), phone: localPhone.trim(), email: localEmail.trim() });
+    await new Promise((r) => setTimeout(r, 600));
+    addDemoOrder({
+      customerName: localName.trim(),
+      customerPhone: localPhone.trim(),
+      items: items.map((i) => ({ name: i.menuItem.name, qty: i.quantity, price: Number(i.menuItem.price) })),
+      total,
+    });
+    clearCart();
+    setStep("confirmation");
+    setSubmitting(false);
+  };
+
+  if (step === "confirmation") {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center gap-4 px-6 py-8">
+        {settings?.logo_url ? (
+          <img src={settings.logo_url} alt={settings.business_name || "Logo"} className="h-12 max-w-[160px] object-contain" />
+        ) : (
+          <span className="font-serif text-xl font-semibold text-gold">{settings?.business_name || "Restaurant"}</span>
+        )}
+        <CheckCircle2 className="w-14 h-14 text-gold" />
+        <h3 className="text-xl font-serif font-bold text-foreground">Order Placed!</h3>
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          Your demo order is now in the Kitchen queue. Switch to the Kitchen tab to see it!
+        </p>
+        <button
+          onClick={onGoToKitchen}
+          className="mt-2 text-xs px-4 py-2 rounded-full gradient-gold text-primary-foreground font-semibold"
+        >
+          View Kitchen Queue
+        </button>
+        <button
+          onClick={() => { setStep("cart"); onGoToCustomer(); }}
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Back to Menu
+        </button>
+      </div>
+    );
+  }
+
+  if (step === "checkout") {
+    return (
+      <div className="flex flex-col h-full overflow-y-auto">
+        <div className="px-3 pt-3 pb-1">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Your Details</p>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Name <span className="text-destructive">*</span></label>
+              <input
+                value={localName}
+                onChange={(e) => { setLocalName(e.target.value); setErrors((p) => ({ ...p, name: undefined })); }}
+                placeholder="Your full name"
+                className={`w-full bg-secondary border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-gold/50 ${errors.name ? "border-destructive" : "border-border"}`}
+                autoFocus
+              />
+              {errors.name && <p className="text-destructive text-xs">{errors.name}</p>}
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Phone <span className="text-destructive">*</span></label>
+              <input
+                value={localPhone}
+                onChange={(e) => { setLocalPhone(e.target.value); setErrors((p) => ({ ...p, phone: undefined })); }}
+                placeholder="(555) 123-4567"
+                type="tel"
+                className={`w-full bg-secondary border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-gold/50 ${errors.phone ? "border-destructive" : "border-border"}`}
+              />
+              {errors.phone && <p className="text-destructive text-xs">{errors.phone}</p>}
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Email <span className="text-muted-foreground font-normal">(optional)</span></label>
+              <input
+                value={localEmail}
+                onChange={(e) => setLocalEmail(e.target.value)}
+                placeholder="you@example.com"
+                type="email"
+                className="w-full bg-secondary border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-gold/50"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="px-3 pt-3 border-t border-border mt-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Summary</p>
+          {items.map((ci) => (
+            <div key={ci.menuItem.id} className="flex justify-between text-xs py-1">
+              <span className="text-foreground"><span className="text-gold font-semibold">{ci.quantity}×</span> {ci.menuItem.name}</span>
+              <span className="text-muted-foreground">${(Number(ci.menuItem.price) * ci.quantity).toFixed(2)}</span>
+            </div>
+          ))}
+          <div className="flex justify-between text-sm font-semibold pt-2 mt-1 border-t border-border">
+            <span className="text-foreground">Total</span>
+            <span className="text-gold">${total.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div className="px-3 pb-4 mt-4 space-y-2">
+          <button
+            onClick={handlePlaceOrder}
+            disabled={submitting}
+            className="w-full gradient-gold text-primary-foreground font-semibold py-2.5 rounded-lg text-sm disabled:opacity-60"
+          >
+            {submitting ? "Placing Order..." : "Place Order (Demo)"}
+          </button>
+          <button onClick={() => setStep("cart")} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1">
+            Back to Cart
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="px-3 pt-3 pb-1 flex items-center justify-between">
+        <p className="text-sm font-serif font-bold text-gold flex items-center gap-1.5">
+          <ShoppingBag className="w-4 h-4" /> Your Order
+        </p>
+        {items.length > 0 && (
+          <span className="text-xs text-muted-foreground">{items.reduce((s, i) => s + i.quantity, 0)} item{items.reduce((s, i) => s + i.quantity, 0) !== 1 ? "s" : ""}</span>
+        )}
+      </div>
+
+      {items.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3 px-4 text-center">
+          <ShoppingBag className="w-10 h-10 opacity-25" />
+          <p className="text-sm">Your cart is empty</p>
+          <button onClick={onGoToCustomer} className="text-xs text-gold hover:text-gold/80 transition-colors underline underline-offset-2">
+            Browse the menu
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="flex-1 overflow-y-auto px-3 space-y-2 py-2">
+            {items.map((ci) => (
+              <div key={ci.menuItem.id} className="bg-secondary rounded-lg p-2.5 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  {ci.menuItem.image_url && (
+                    <img src={ci.menuItem.image_url} alt={ci.menuItem.name} className="w-12 h-12 rounded-md object-cover flex-shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-foreground text-xs truncate">{ci.menuItem.name}</p>
+                    <p className="text-gold text-xs">${Number(ci.menuItem.price).toFixed(2)}</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => updateQuantity(ci.menuItem.id, ci.quantity - 1)} className="w-6 h-6 rounded bg-card flex items-center justify-center text-muted-foreground hover:text-foreground">
+                      <Minus className="w-3 h-3" />
+                    </button>
+                    <span className="w-5 text-center text-xs font-medium text-foreground">{ci.quantity}</span>
+                    <button onClick={() => updateQuantity(ci.menuItem.id, ci.quantity + 1)} className="w-6 h-6 rounded bg-card flex items-center justify-center text-muted-foreground hover:text-foreground">
+                      <Plus className="w-3 h-3" />
+                    </button>
+                    <button onClick={() => removeItem(ci.menuItem.id)} className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground hover:text-destructive ml-0.5">
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+                {ci.specialInstructions && (
+                  <div className="flex items-start gap-1 pl-1">
+                    <MessageSquare className="w-3 h-3 text-gold mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-muted-foreground italic">{ci.specialInstructions}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="px-3 pb-4 pt-3 border-t border-border space-y-2">
+            <div className="flex justify-between text-sm font-semibold">
+              <span className="text-foreground">Total</span>
+              <span className="text-gold">${total.toFixed(2)}</span>
+            </div>
+            <button
+              onClick={() => setStep("checkout")}
+              className="w-full gradient-gold text-primary-foreground font-semibold py-2.5 rounded-lg text-sm"
+            >
+              Checkout
+            </button>
+            <button onClick={onGoToCustomer} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1">
+              Continue Browsing
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function MobileFrame() {
   const { menuItems, phoneHighlight, markStepComplete } = useDemo();
+  const { cartTabRequested, setCartTabRequested } = useCart();
   const [phoneView, setPhoneView] = useState<PhoneView>("admin");
+
+  useEffect(() => {
+    if (cartTabRequested) {
+      setPhoneView("cart");
+      setCartTabRequested(false);
+    }
+  }, [cartTabRequested, setCartTabRequested]);
 
   const handleCustomerClick = () => {
     setPhoneView("customer");
@@ -175,6 +392,16 @@ function MobileFrame() {
           }`}
         >
           <Users className="w-3 h-3" /> Customer
+        </button>
+        <button
+          onClick={() => setPhoneView("cart")}
+          className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full border transition-all flex-1 justify-center ${
+            phoneView === "cart"
+              ? "bg-gold/20 text-gold border-gold/40 font-semibold"
+              : "bg-transparent text-muted-foreground border-border hover:text-foreground"
+          }`}
+        >
+          <ShoppingBag className="w-3 h-3" /> Cart
         </button>
         <button
           onClick={() => setPhoneView("kitchen")}
@@ -219,15 +446,11 @@ function MobileFrame() {
             )}
           </>
         )}
+        {phoneView === "cart" && <InlineCartView onGoToCustomer={() => setPhoneView("customer")} onGoToKitchen={() => setPhoneView("kitchen")} />}
         {phoneView === "kitchen" && <KitchenView />}
       </div>
 
-      {phoneView === "customer" && (
-        <>
-          <CartFAB />
-          <DemoCartSidebar />
-        </>
-      )}
+      {phoneView === "customer" && <CartFAB />}
     </div>
   );
 }

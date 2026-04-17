@@ -28,6 +28,8 @@ type CartContextType = {
   setPendingItem: (item: MenuItem | null) => void;
   customerInfo: CustomerInfo;
   setCustomerInfo: (info: CustomerInfo) => void;
+  cartTabRequested: boolean;
+  setCartTabRequested: (v: boolean) => void;
 };
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -37,6 +39,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [pendingItem, setPendingItem] = useState<MenuItem | null>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ name: "", phone: "", email: "" });
+  const [cartTabRequested, setCartTabRequested] = useState(false);
 
   const addItem = useCallback((menuItem: MenuItem, specialInstructions?: string) => {
     setItems((prev) => {
@@ -84,6 +87,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         items, addItem, removeItem, updateQuantity, updateSpecialInstructions,
         clearCart, total, itemCount, isOpen, setIsOpen,
         pendingItem, setPendingItem, customerInfo, setCustomerInfo,
+        cartTabRequested, setCartTabRequested,
       }}
     >
       {children}

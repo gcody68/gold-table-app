@@ -5,10 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useCart } from "@/contexts/CartContext";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, ShoppingCart } from "lucide-react";
 
 export default function DemoOrderCustomizationModal() {
-  const { pendingItem, setPendingItem, addItem, customerInfo, setCustomerInfo } = useCart();
+  const { pendingItem, setPendingItem, addItem, setCartTabRequested, customerInfo, setCustomerInfo } = useCart();
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [localName, setLocalName] = useState(customerInfo.name);
   const [localPhone, setLocalPhone] = useState(customerInfo.phone);
@@ -25,12 +25,13 @@ export default function DemoOrderCustomizationModal() {
     return errs;
   };
 
-  const handleAdd = () => {
+  const handleAdd = (openCart = false) => {
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setCustomerInfo({ name: localName.trim(), phone: localPhone.trim(), email: localEmail.trim() });
     addItem(pendingItem, specialInstructions.trim() || undefined);
     setPendingItem(null);
+    if (openCart) setCartTabRequested(true);
   };
 
   return (
@@ -105,13 +106,17 @@ export default function DemoOrderCustomizationModal() {
           </div>
         </div>
 
-        <div className="flex gap-3 pt-2">
-          <Button variant="ghost" onClick={() => setPendingItem(null)} className="flex-1 text-muted-foreground">
-            Cancel
+        <div className="flex flex-col gap-2 pt-2">
+          <Button onClick={() => handleAdd(true)} className="w-full gradient-gold text-primary-foreground font-semibold">
+            <ShoppingCart className="w-4 h-4 mr-2" />
+            Add to Order &amp; View Cart
           </Button>
-          <Button onClick={handleAdd} className="flex-1 gradient-gold text-primary-foreground font-semibold">
+          <Button onClick={() => handleAdd(false)} variant="outline" className="w-full border-border text-foreground hover:bg-secondary">
             <ShoppingBag className="w-4 h-4 mr-2" />
-            Add to Order
+            Add &amp; Continue Browsing
+          </Button>
+          <Button variant="ghost" onClick={() => setPendingItem(null)} className="w-full text-muted-foreground text-sm">
+            Cancel
           </Button>
         </div>
       </DialogContent>
