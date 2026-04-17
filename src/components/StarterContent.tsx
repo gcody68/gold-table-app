@@ -1,36 +1,29 @@
+const BASE = "https://gold-table-app.vercel.app";
+
 export const STARTER_ITEMS = [
-  // === MAINS (10) ===
-  { name: "Huli Huli Chicken", description: "Hawaiian grilled chicken glazed with pineapple-soy sauce and served with steamed rice.", price: 18.95, category: "Mains", image_url: "https://source.unsplash.com/featured/?teriyaki,chicken", sort_order: 1 },
-  { name: "Loco Moco", description: "Rice, juicy beef patty, brown gravy, and a sunny-side-up egg. Island comfort food.", price: 16.50, category: "Mains", image_url: "https://source.unsplash.com/featured/?burger,beef", sort_order: 2 },
-  { name: "Garlic Shrimp Plate", description: "Buttery garlic shrimp sautéed North Shore style with jasmine rice.", price: 22.00, category: "Mains", image_url: "https://source.unsplash.com/featured/?shrimp,seafood", sort_order: 3 },
-  { name: "Kalua Pork Plate", description: "Slow-roasted pulled pork with cabbage, macaroni salad, and two scoops rice.", price: 19.50, category: "Mains", image_url: "https://source.unsplash.com/featured/?pulled,pork", sort_order: 4 },
-  { name: "Ahi Poke Bowl", description: "Fresh cubed ahi tuna over sushi rice with avocado, edamame, and spicy mayo.", price: 24.95, category: "Mains", image_url: "https://source.unsplash.com/featured/?poke,bowl,tuna", sort_order: 5 },
-  { name: "Mahi Mahi Grilled", description: "Pan-seared mahi mahi with mango salsa, coconut rice, and grilled pineapple.", price: 26.50, category: "Mains", image_url: "https://source.unsplash.com/featured/?grilled,fish,salmon", sort_order: 6 },
-  { name: "Teriyaki Steak", description: "Premium ribeye glazed with house teriyaki, served with grilled vegetables.", price: 28.95, category: "Mains", image_url: "https://source.unsplash.com/featured/?steak,grilled", sort_order: 7 },
-  { name: "Spam Musubi Deluxe", description: "Crispy seared spam on sushi rice wrapped in nori, served in a trio.", price: 12.50, category: "Mains", image_url: "https://source.unsplash.com/featured/?sushi,rice", sort_order: 8 },
-  { name: "Coconut Shrimp Basket", description: "Crispy coconut-crusted shrimp with sweet chili dipping sauce.", price: 17.95, category: "Mains", image_url: "https://source.unsplash.com/featured/?coconut,shrimp,fried", sort_order: 9 },
-  { name: "Island Veggie Bowl", description: "Roasted taro, sweet potato, avocado, quinoa, and macadamia nut pesto.", price: 15.50, category: "Mains", image_url: "https://source.unsplash.com/featured/?vegetable,bowl,healthy", sort_order: 10 },
+  // === BREAKFAST (6) ===
+  { name: "Eggs Benedict", description: "Poached eggs on toasted English muffin with Canadian bacon and house hollandaise sauce.", price: 15.00, category: "Breakfast", image_url: `${BASE}/eggs-benny.jpg.png`, sort_order: 1 },
+  { name: "Avocado Toast", description: "Smashed avocado on sourdough with chili flakes, poached egg, and everything bagel seasoning.", price: 13.00, category: "Breakfast", image_url: `${BASE}/avocado-toast.jpg.png`, sort_order: 2 },
+  { name: "Belgian Waffle", description: "Golden crispy waffle topped with fresh berries, whipped cream, and warm maple syrup.", price: 14.00, category: "Breakfast", image_url: `${BASE}/belgian-waffle.jpg.png`, sort_order: 3 },
+  { name: "Berry Parfait", description: "Greek yogurt layered with house-made granola, mixed berries, and honey.", price: 10.00, category: "Breakfast", image_url: `${BASE}/berry-parfait.jpg.png`, sort_order: 4 },
+  { name: "Salmon Bagel", description: "Everything bagel with cream cheese, smoked salmon, capers, red onion, and dill.", price: 16.00, category: "Breakfast", image_url: `${BASE}/salmon-bagel.jpg.png`, sort_order: 5 },
+  { name: "Caramel Macchiato", description: "Espresso poured over velvety steamed milk with rich caramel drizzle.", price: 7.00, category: "Breakfast", image_url: `${BASE}/caramel-macch.jpg.png`, sort_order: 6 },
 
-  // === SIDES (10) ===
-  { name: "Macaroni Salad", description: "Creamy Hawaiian-style mac salad — the essential plate lunch side.", price: 5.50, category: "Sides", image_url: "https://source.unsplash.com/featured/?macaroni,salad,pasta", sort_order: 11 },
-  { name: "Garlic Edamame", description: "Steamed edamame tossed with roasted garlic and sea salt.", price: 6.95, category: "Sides", image_url: "https://source.unsplash.com/featured/?edamame,green,beans", sort_order: 12 },
-  { name: "Sweet Potato Fries", description: "Crispy sweet potato fries with li hing mui seasoning.", price: 7.95, category: "Sides", image_url: "https://source.unsplash.com/featured/?sweet,potato,fries", sort_order: 13 },
-  { name: "Pineapple Slaw", description: "Fresh cabbage slaw with pineapple, cilantro, and lime dressing.", price: 5.50, category: "Sides", image_url: "https://source.unsplash.com/featured/?coleslaw,salad", sort_order: 14 },
-  { name: "Jasmine Rice (Two Scoops)", description: "Fluffy steamed jasmine rice, island-style double portion.", price: 3.50, category: "Sides", image_url: "https://source.unsplash.com/featured/?steamed,rice,bowl", sort_order: 15 },
-  { name: "Crispy Wonton Chips", description: "Fried wonton wrappers with sweet chili and wasabi cream.", price: 6.50, category: "Sides", image_url: "https://source.unsplash.com/featured/?crispy,chips,fried", sort_order: 16 },
-  { name: "Grilled Corn on the Cob", description: "Charred corn with butter, furikake, and Kewpie mayo.", price: 6.50, category: "Sides", image_url: "https://source.unsplash.com/featured/?grilled,corn,cob", sort_order: 17 },
-  { name: "Kim Chee", description: "House-fermented spicy napa cabbage, tangy and crunchy.", price: 4.50, category: "Sides", image_url: "https://source.unsplash.com/featured/?kimchi,fermented,cabbage", sort_order: 18 },
-  { name: "Taro Chips", description: "Thin-sliced taro root fried crisp with sea salt.", price: 7.50, category: "Sides", image_url: "https://source.unsplash.com/featured/?chips,snack,crispy", sort_order: 19 },
-  { name: "Mac & Cheese", description: "Three-cheese blend baked golden with panko breadcrumb topping.", price: 8.95, category: "Sides", image_url: "https://source.unsplash.com/featured/?mac,cheese,pasta", sort_order: 20 },
+  // === LUNCH (5) ===
+  { name: "Caesar Salad", description: "Romaine hearts, shaved parmesan, house-made croutons, and classic Caesar dressing.", price: 14.00, category: "Lunch", image_url: `${BASE}/photo-1514362545857-3bc16c4c7d1b.png`, sort_order: 7 },
+  { name: "Wagyu Burger", description: "6oz wagyu beef patty with aged cheddar, caramelized onions, truffle aioli, on a brioche bun.", price: 22.00, category: "Lunch", image_url: `${BASE}/wagyu-burger.jpg.png`, sort_order: 8 },
+  { name: "Fish Tacos", description: "Beer-battered cod with cabbage slaw, pico de gallo, and chipotle crema in warm corn tortillas.", price: 18.00, category: "Lunch", image_url: `${BASE}/fish-tacos.jpg.png`, sort_order: 9 },
+  { name: "Pesto Pasta", description: "Al dente penne tossed in house-made basil pesto with sun-dried tomatoes and pine nuts.", price: 19.00, category: "Lunch", image_url: `${BASE}/pesto-pasta.jpg.png`, sort_order: 10 },
+  { name: "Protein Bowl", description: "Quinoa, grilled chicken, roasted chickpeas, avocado, cucumber, and lemon tahini dressing.", price: 20.00, category: "Lunch", image_url: `${BASE}/protein-bowl.jpg.png`, sort_order: 11 },
 
-  // === DRINKS (9) ===
-  { name: "POG Juice", description: "Classic passion fruit, orange, and guava blend — pure aloha in a glass.", price: 6.50, category: "Drinks", image_url: "https://source.unsplash.com/featured/?tropical,juice,fruit", sort_order: 21 },
-  { name: "Kona Coffee", description: "100% Kona-grown dark roast, served hot or iced.", price: 5.50, category: "Drinks", image_url: "https://source.unsplash.com/featured/?coffee,espresso,cup", sort_order: 22 },
-  { name: "Lilikoi Lemonade", description: "Fresh-squeezed lemonade with passion fruit and mint.", price: 6.00, category: "Drinks", image_url: "https://source.unsplash.com/featured/?lemonade,citrus,drink", sort_order: 23 },
-  { name: "Coconut Water", description: "Chilled fresh coconut water — naturally hydrating.", price: 4.50, category: "Drinks", image_url: "https://source.unsplash.com/featured/?coconut,water,tropical", sort_order: 24 },
-  { name: "Mango Smoothie", description: "Frozen mango, coconut milk, and banana blended smooth.", price: 8.50, category: "Drinks", image_url: "https://source.unsplash.com/featured/?mango,smoothie,tropical", sort_order: 25 },
-  { name: "Iced Matcha Latte", description: "Premium matcha whisked with oat milk over ice.", price: 6.50, category: "Drinks", image_url: "https://source.unsplash.com/featured/?matcha,latte,iced", sort_order: 26 },
-  { name: "Hawaiian Sun Iced Tea", description: "Brewed black tea with tropical fruit infusion.", price: 4.50, category: "Drinks", image_url: "https://source.unsplash.com/featured/?iced,tea,drink", sort_order: 27 },
-  { name: "Ginger Beer", description: "Spicy-sweet craft ginger beer, locally brewed.", price: 5.00, category: "Drinks", image_url: "https://source.unsplash.com/featured/?ginger,beer,drink", sort_order: 28 },
-  { name: "Hot Chocolate", description: "Rich dark chocolate with coconut whipped cream.", price: 5.50, category: "Drinks", image_url: "https://source.unsplash.com/featured/?hot,chocolate,cocoa", sort_order: 29 },
+  // === DINNER (5) ===
+  { name: "Ribeye Steak", description: "16oz prime ribeye, dry-aged 28 days, served with truffle butter and garlic mashed potatoes.", price: 58.00, category: "Dinner", image_url: `${BASE}/ribeye-steak.jpg.png`, sort_order: 12 },
+  { name: "Seared Scallops", description: "Pan-seared diver scallops on sweet corn purée with crispy prosciutto and microgreens.", price: 42.00, category: "Dinner", image_url: `${BASE}/scallops.jpg.png`, sort_order: 13 },
+  { name: "Tiramisu", description: "Classic Italian dessert with espresso-soaked ladyfingers, mascarpone cream, and cocoa dust.", price: 12.00, category: "Dinner", image_url: `${BASE}/tiramisu.jpg.png`, sort_order: 14 },
+  { name: "Lemon Tart", description: "Buttery shortcrust pastry filled with silky lemon curd and toasted Italian meringue.", price: 11.00, category: "Dinner", image_url: `${BASE}/lemon-tart.jpg.png`, sort_order: 15 },
+  { name: "Apple Galette", description: "Rustic free-form pastry with spiced apple filling, caramel drizzle, and vanilla bean ice cream.", price: 13.00, category: "Dinner", image_url: `${BASE}/apple-galette.jpg.png`, sort_order: 16 },
+
+  // === DRINKS (3) ===
+  { name: "Raspberry Lemonade", description: "House-made lemonade with fresh raspberries, cane sugar, and a sprig of mint.", price: 6.00, category: "Drinks", image_url: `${BASE}/rasp-lemonade.jpg.png`, sort_order: 17 },
+  { name: "Cheesecake Shake", description: "Thick milkshake blended with house cheesecake, graham cracker crumble, and whipped cream.", price: 10.00, category: "Drinks", image_url: `${BASE}/cheesecake.jpg.png`, sort_order: 18 },
 ];
