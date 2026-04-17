@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminProvider, useAdmin } from "@/contexts/AdminContext";
 import AdminLoginModal from "@/components/AdminLoginModal";
+import KitchenAnalyticsBar from "@/components/KitchenAnalyticsBar";
 import { Check, Clock, Phone, User, ChefHat, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -92,6 +93,8 @@ function KitchenBoard() {
           </div>
         </div>
       </header>
+
+      <KitchenAnalyticsBar />
 
       <div className="container py-6">
         {isLoading ? (
