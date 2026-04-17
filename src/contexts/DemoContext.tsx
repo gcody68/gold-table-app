@@ -70,6 +70,23 @@ function saveToStorage<T>(key: string, value: T): void {
 
 export type DemoStep = "branding" | "menu" | "ordering";
 
+export type DemoOrderItem = {
+  name: string;
+  qty: number;
+  price: number;
+};
+
+export type DemoOrder = {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  items: DemoOrderItem[];
+  total: number;
+  status: "new" | "in-progress" | "ready" | "completed";
+  time: string;
+  createdAt: number;
+};
+
 type DemoContextType = {
   guestId: string;
   menuItems: MenuItem[];
@@ -86,6 +103,9 @@ type DemoContextType = {
   markStepComplete: (step: DemoStep) => void;
   syncPulse: boolean;
   phoneHighlight: boolean;
+  demoOrders: DemoOrder[];
+  addDemoOrder: (order: Omit<DemoOrder, "id" | "time" | "createdAt" | "status">) => void;
+  updateDemoOrderStatus: (id: string, status: DemoOrder["status"]) => void;
 };
 
 const DemoContext = createContext<DemoContextType | null>(null);
@@ -101,6 +121,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   );
   const [isAdmin, setIsAdmin] = useState(true);
   const [completedSteps, setCompletedSteps] = useState<Set<DemoStep>>(new Set());
+  const [demoOrders, setDemoOrders] = useState<DemoOrder[]>([]);
   const [syncPulse, setSyncPulse] = useState(false);
   const [phoneHighlight, setPhoneHighlight] = useState(false);
   const pulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -171,11 +192,29 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     setCompletedSteps((prev) => new Set([...prev, step]));
   }, []);
 
+  const addDemoOrder = useCallback((order: Omit<DemoOrder, "id" | "time" | "createdAt" | "status">) => {
+    const newOrder: DemoOrder = {
+      ...order,
+      id: `ORD-${String(Math.floor(Math.random() * 900) + 100)}`,
+      status: "new",
+      time: "just now",
+      createdAt: Date.now(),
+    };
+    setDemoOrders((prev) => [newOrder, ...prev]);
+    triggerSync();
+    setCompletedSteps((prev) => new Set([...prev, "ordering" as DemoStep]));
+  }, [triggerSync]);
+
+  const updateDemoOrderStatus = useCallback((id: string, status: DemoOrder["status"]) => {
+    setDemoOrders((prev) => prev.map((o) => o.id === id ? { ...o, status } : o));
+  }, []);
+
   const resetDemo = useCallback(() => {
     const freshItems = buildDefaultMenuItems();
     setMenuItems(freshItems);
     setSettings(DEFAULT_DEMO_SETTINGS);
     setCompletedSteps(new Set());
+    setDemoOrders([]);
     localStorage.removeItem(DEMO_MENU_KEY);
     localStorage.removeItem(DEMO_SETTINGS_KEY);
     localStorage.removeItem(DEMO_GUEST_ID_KEY);
@@ -198,6 +237,9 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       markStepComplete,
       syncPulse,
       phoneHighlight,
+      demoOrders,
+      addDemoOrder,
+      updateDemoOrderStatus,
     }}>
       {children}
     </DemoContext.Provider>

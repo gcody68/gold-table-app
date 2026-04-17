@@ -8,8 +8,8 @@ import DemoAdminPanel from "@/components/demo/DemoAdminPanel";
 import DemoMenuGrid from "@/components/demo/DemoMenuGrid";
 import GuidePanel from "@/components/demo/GuidePanel";
 import CartFAB from "@/components/CartFAB";
-import CartSidebar from "@/components/CartSidebar";
-import OrderCustomizationModal from "@/components/OrderCustomizationModal";
+import DemoCartSidebar from "@/components/demo/DemoCartSidebar";
+import DemoOrderCustomizationModal from "@/components/demo/DemoOrderCustomizationModal";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, RotateCcw, Smartphone, UtensilsCrossed, Users, Wifi, ShoppingBag, Clock, CircleCheck as CheckCircle2, Settings } from "lucide-react";
 import heroDefault from "@/assets/hero-restaurant.jpg";
@@ -47,53 +47,40 @@ function DemoHeroSection() {
 type PhoneView = "admin" | "customer" | "kitchen";
 
 function KitchenView() {
-  const { cartItems } = useCart() as any;
+  const { demoOrders, updateDemoOrderStatus } = useDemo();
 
-  const mockOrders = [
-    {
-      id: "ORD-001",
-      table: "Table 4",
-      status: "in-progress" as const,
-      time: "2 min ago",
-      items: [{ name: "Eggs Benedict", qty: 1 }, { name: "Fresh-Press OJ", qty: 2 }],
-    },
-    {
-      id: "ORD-002",
-      table: "Table 7",
-      status: "new" as const,
-      time: "just now",
-      items: [{ name: "Ribeye Steak", qty: 1 }, { name: "Garlic Fries", qty: 1 }],
-    },
-    {
-      id: "ORD-003",
-      table: "Table 2",
-      status: "ready" as const,
-      time: "8 min ago",
-      items: [{ name: "Caesar Salad", qty: 2 }, { name: "Gold Margarita", qty: 2 }],
-    },
-  ];
+  const activeOrders = demoOrders.filter((o) => o.status !== "completed");
 
   const statusConfig = {
     "new": { label: "New", bg: "bg-blue-500/20", text: "text-blue-400", border: "border-blue-500/30" },
     "in-progress": { label: "In Progress", bg: "bg-amber-500/20", text: "text-amber-400", border: "border-amber-500/30" },
     "ready": { label: "Ready", bg: "bg-emerald-500/20", text: "text-emerald-400", border: "border-emerald-500/30" },
+    "completed": { label: "Complete", bg: "bg-secondary", text: "text-muted-foreground", border: "border-border" },
   };
 
   return (
     <div className="p-3 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-serif font-bold text-gold">Kitchen Queue</h2>
-        <span className="text-xs text-muted-foreground">{mockOrders.length} active</span>
+        <span className="text-xs text-muted-foreground">{activeOrders.length} active</span>
       </div>
 
-      {mockOrders.map((order) => {
+      {activeOrders.length === 0 && (
+        <div className="rounded-lg border border-border bg-secondary/30 p-4 text-center space-y-1">
+          <UtensilsCrossed className="w-6 h-6 text-muted-foreground/40 mx-auto" />
+          <p className="text-xs text-muted-foreground">No orders yet.</p>
+          <p className="text-xs text-muted-foreground/70">Switch to Customer view and place an order to see it here.</p>
+        </div>
+      )}
+
+      {activeOrders.map((order) => {
         const cfg = statusConfig[order.status];
         return (
           <div key={order.id} className={`rounded-lg border ${cfg.border} bg-card p-3 space-y-2`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <UtensilsCrossed className="w-3.5 h-3.5 text-gold" />
-                <span className="text-xs font-semibold text-foreground">{order.table}</span>
+                <span className="text-xs font-semibold text-foreground">{order.customerName}</span>
                 <span className="text-xs text-muted-foreground">{order.id}</span>
               </div>
               <div className="flex items-center gap-1">
@@ -115,20 +102,32 @@ function KitchenView() {
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cfg.bg} ${cfg.text} border ${cfg.border}`}>
                 {cfg.label}
               </span>
-              {order.status !== "ready" && (
-                <button className={`text-xs px-2 py-0.5 rounded font-medium transition-colors ${
-                  order.status === "new"
-                    ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
-                    : "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
-                }`}>
-                  {order.status === "new" ? "Start" : "Mark Ready"}
-                </button>
-              )}
-              {order.status === "ready" && (
-                <button className="text-xs px-2 py-0.5 rounded font-medium bg-secondary text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Complete
-                </button>
-              )}
+              <div className="flex items-center gap-1">
+                {order.status === "new" && (
+                  <button
+                    onClick={() => updateDemoOrderStatus(order.id, "in-progress")}
+                    className="text-xs px-2 py-0.5 rounded font-medium bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-colors"
+                  >
+                    Start
+                  </button>
+                )}
+                {order.status === "in-progress" && (
+                  <button
+                    onClick={() => updateDemoOrderStatus(order.id, "ready")}
+                    className="text-xs px-2 py-0.5 rounded font-medium bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors"
+                  >
+                    Mark Ready
+                  </button>
+                )}
+                {order.status === "ready" && (
+                  <button
+                    onClick={() => updateDemoOrderStatus(order.id, "completed")}
+                    className="text-xs px-2 py-0.5 rounded font-medium bg-secondary text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                  >
+                    <CheckCircle2 className="w-3 h-3" /> Complete
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         );
@@ -226,7 +225,7 @@ function MobileFrame() {
       {phoneView === "customer" && (
         <>
           <CartFAB />
-          <CartSidebar />
+          <DemoCartSidebar />
         </>
       )}
     </div>
@@ -268,7 +267,6 @@ function SyncIndicator() {
 
 function DemoContent() {
   const { settings, resetDemo } = useDemo();
-  const { pendingItem } = useCart();
 
   useEffect(() => {
     applyBgStyle(getBgStyleById((settings.bg_style as any) ?? "forest-dark"));
@@ -370,7 +368,7 @@ function DemoContent() {
         </div>
       </div>
 
-      {pendingItem && <OrderCustomizationModal />}
+      <DemoOrderCustomizationModal />
     </div>
   );
 }
