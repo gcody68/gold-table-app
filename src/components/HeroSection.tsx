@@ -1,9 +1,12 @@
 import heroDefault from "@/assets/hero-restaurant.jpg";
 import { useRestaurantSettings } from "@/hooks/useRestaurantSettings";
-import { MapPin, Phone } from "lucide-react";
+import { MapPin, Phone, CirclePlay as PlayCircle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useAdmin } from "@/contexts/AdminContext";
 
 export default function HeroSection() {
   const { data: settings } = useRestaurantSettings();
+  const { isAdmin } = useAdmin();
   const heroImage = settings?.header_image_url || heroDefault;
 
   return (
@@ -31,6 +34,16 @@ export default function HeroSection() {
             <Phone className="w-4 h-4 text-gold" />
             {settings.business_phone}
           </p>
+        )}
+        {!isAdmin && (
+          <div className="pt-2">
+            <Link to="/demo">
+              <button className="inline-flex items-center gap-2 bg-gold/15 hover:bg-gold/25 border border-gold/40 hover:border-gold/60 text-gold font-semibold text-sm px-4 py-2 rounded-full transition-all duration-200 backdrop-blur-sm">
+                <PlayCircle className="w-4 h-4" />
+                Try Interactive Demo
+              </button>
+            </Link>
+          </div>
         )}
       </div>
     </section>
