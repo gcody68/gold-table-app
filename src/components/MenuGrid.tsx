@@ -76,13 +76,14 @@ function AddToOrderButton({
   }
 
   if (!periodActive) {
+    const timeInfo = periodStartLabel ? `Served from ${periodStartLabel}` : `${periodLabel} only`;
     return (
       <button
         disabled
-        className="w-full bg-secondary text-muted-foreground font-medium py-2.5 text-xs flex items-center justify-center gap-2 cursor-not-allowed rounded opacity-70"
+        className="w-full bg-secondary/60 text-muted-foreground font-medium py-2.5 text-xs flex items-center justify-center gap-2 cursor-not-allowed rounded border border-border/50"
       >
-        <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-        Available during {periodLabel} from {periodStartLabel}
+        <Clock className="w-3.5 h-3.5 flex-shrink-0 text-amber-400/70" />
+        {timeInfo}
       </button>
     );
   }
@@ -122,16 +123,7 @@ export default function MenuGrid() {
       const allCatItems = (items || []).filter((i) => i.category === cat);
       const catPeriod: MealPeriod | null = CATEGORY_TO_PERIOD[cat] ?? null;
 
-      let displayItems: MenuItem[];
-      if (isAdmin) {
-        displayItems = allCatItems;
-      } else if (unavailableDisplay === "hide") {
-        displayItems = allCatItems.filter(
-          (i) => !isSoldOut(i) && isPeriodActive(i.meal_period)
-        );
-      } else {
-        displayItems = allCatItems;
-      }
+      const displayItems = allCatItems;
 
       const isCatActive = catPeriod ? isPeriodActive(catPeriod) : true;
       const periodStatus = catPeriod ? getPeriodStatus(catPeriod) : null;
@@ -168,14 +160,13 @@ export default function MenuGrid() {
 
     const sortedPermanent = permanentGroups.map((g) => ({
       ...g,
-      isActive: g.items.some((i) => isPeriodActive(i.meal_period)),
+      isActive: true,
     }));
 
     return [
       ...activeService,
-      ...sortedPermanent.filter((g) => g.isActive),
+      ...sortedPermanent,
       ...upcomingService,
-      ...sortedPermanent.filter((g) => !g.isActive),
       ...pastService,
     ];
   }, [items, isAdmin, unavailableDisplay, isPeriodActive, currentPeriod, getPeriodStatus]);
@@ -255,8 +246,7 @@ export default function MenuGrid() {
               const soldOut = isSoldOut(item);
               const periodStatus = getPeriodStatus(item.meal_period);
               const periodActive = isPeriodActive(item.meal_period);
-              const unavailable = !isAdmin && (soldOut || !periodActive);
-              const shouldDim = !isAdmin && unavailableDisplay === "gray" && unavailable;
+              const shouldDim = !isAdmin && soldOut;
 
               return (
                 <div
