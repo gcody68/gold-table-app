@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { resolveImageUrl } from "@/lib/utils";
 import { useDemo } from "@/contexts/DemoContext";
 import { useCart } from "@/contexts/CartContext";
 import {
@@ -209,7 +210,7 @@ export default function DemoMenuGrid({ forceCustomer = false }: { forceCustomer?
                     <div className="flex gap-3 p-3">
                       {item.image_url ? (
                         <div className="w-20 h-20 flex-shrink-0 rounded-md overflow-hidden">
-                          <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
+                          <img src={resolveImageUrl(item.image_url) || item.image_url!} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
                         </div>
                       ) : (
                         <div className="w-20 h-20 flex-shrink-0 rounded-md bg-secondary flex items-center justify-center">

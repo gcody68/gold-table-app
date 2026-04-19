@@ -31,7 +31,7 @@ function AppContent() {
       {isAdmin && showAdmin && <AdminPanel />}
       <HeroSection />
       <MenuGrid />
-      {settings?.show_gallery && <GallerySection />}
+      <GallerySection />
 <CartFAB />
       <CartSidebar />
       <FloatingNavSelector />

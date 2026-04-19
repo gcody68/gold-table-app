@@ -56,7 +56,7 @@ export default function FloatingNavSelector() {
 
   const cartCount = cartItems.reduce((s, i) => s + i.quantity, 0);
 
-  if (sortedCategories.length === 0 && !settings?.show_gallery) return null;
+  if (sortedCategories.length === 0) return null;
 
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
@@ -85,15 +85,13 @@ export default function FloatingNavSelector() {
         );
       })}
 
-      {settings?.show_gallery && (
-        <button
-          onClick={() => scrollTo("gallery-section")}
-          className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-gold hover:bg-secondary rounded-full transition-all duration-200 flex items-center gap-1"
-        >
-          <Images className="w-3 h-3" />
-          Gallery
-        </button>
-      )}
+      <button
+        onClick={() => scrollTo("gallery-section")}
+        className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-gold hover:bg-secondary rounded-full transition-all duration-200 flex items-center gap-1"
+      >
+        <Images className="w-3 h-3" />
+        Gallery
+      </button>
 
       {cartCount > 0 && (
         <>

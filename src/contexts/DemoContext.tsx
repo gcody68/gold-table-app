@@ -33,7 +33,7 @@ const DEFAULT_DEMO_SETTINGS: RestaurantSettings = {
   stripe_public_key: null,
   stripe_secret_key: null,
   kitchen_view_enabled: true,
-  show_gallery: false,
+  show_gallery: true,
   service_hours: DEFAULT_SERVICE_HOURS,
   unavailable_display: "hide",
 };

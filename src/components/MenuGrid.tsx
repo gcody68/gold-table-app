@@ -9,8 +9,10 @@ import {
 import { useMealPeriodConfig } from "@/hooks/useMealPeriodConfig";
 import { useAdmin } from "@/contexts/AdminContext";
 import { useCart } from "@/contexts/CartContext";
-import { Plus, UtensilsCrossed, ShoppingBag, Clock, ToggleLeft, Zap } from "lucide-react";
+import { Plus, UtensilsCrossed, ShoppingBag, Clock, ToggleLeft, Zap, ZoomIn } from "lucide-react";
 import { useState, useMemo } from "react";
+import ImageLightbox from "./ImageLightbox";
+import { resolveImageUrl } from "@/lib/utils";
 
 const CATEGORY_TO_PERIOD: Record<string, MealPeriod> = {
   Breakfast: "breakfast",
@@ -106,6 +108,7 @@ export default function MenuGrid() {
   const { setPendingItem, pendingItem } = useCart();
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [creatingCategory, setCreatingCategory] = useState<string | null>(null);
+  const [lightboxItem, setLightboxItem] = useState<{ src: string; caption: string | null } | null>(null);
 
   const { currentPeriod, unavailableDisplay, getPeriodStatus, isPeriodActive } = useMealPeriodConfig();
 
@@ -263,13 +266,19 @@ export default function MenuGrid() {
                   onClick={() => isAdmin && setEditingItem(item)}
                 >
                   {item.image_url ? (
-                    <div className="w-full aspect-[4/3] overflow-hidden">
+                    <div
+                      className="w-full aspect-[4/3] overflow-hidden relative group/img cursor-pointer"
+                      onClick={(e) => { e.stopPropagation(); setLightboxItem({ src: item.image_url!, caption: item.name + (item.description ? ` — ${item.description}` : "") }); }}
+                    >
                       <img
-                        src={item.image_url}
+                        src={resolveImageUrl(item.image_url) || item.image_url!}
                         alt={item.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover/img:scale-[1.03]"
                         loading="lazy"
                       />
+                      <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/25 transition-all duration-300 flex items-center justify-center">
+                        <ZoomIn className="w-7 h-7 text-white opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 drop-shadow-lg" />
+                      </div>
                     </div>
                   ) : (
                     <div className="w-full aspect-[4/3] bg-secondary flex items-center justify-center">
@@ -366,6 +375,13 @@ export default function MenuGrid() {
       )}
       {pendingItem && (
         <OrderCustomizationModal item={pendingItem} onClose={() => setPendingItem(null)} />
+      )}
+      {lightboxItem && (
+        <ImageLightbox
+          images={[{ src: lightboxItem.src, caption: lightboxItem.caption }]}
+          currentIndex={0}
+          onClose={() => setLightboxItem(null)}
+        />
       )}
     </section>
   );
