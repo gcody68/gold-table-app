@@ -36,16 +36,22 @@ type ParsedMenuItem = {
 type ParsedData = {
   menuItems: ParsedMenuItem[];
   galleryItems: { image_url: string; caption: string }[];
-  restaurantInfo: { business_name?: string; business_address?: string; business_phone?: string } | null;
+  restaurantInfo: {
+    business_name?: string;
+    business_address?: string;
+    business_phone?: string;
+    logo_url?: string;
+    header_image_url?: string;
+  } | null;
 };
 
 function normalizeCategory(raw: string): string {
   if (!raw) return "Sides";
   const trimmed = raw.trim().toLowerCase();
-  const match = [...CATEGORIES].find((c) => c.toLowerCase() === trimmed);
-  if (match) return match;
+  const exact = [...CATEGORIES].find((c) => c.toLowerCase() === trimmed);
+  if (exact) return exact;
   for (const cat of CATEGORIES) {
-    if (trimmed.includes(cat.toLowerCase()) || cat.toLowerCase().includes(trimmed)) return cat;
+    if (trimmed.includes(cat.toLowerCase())) return cat;
   }
   return "Sides";
 }
@@ -62,6 +68,14 @@ function normalizePeriod(raw: string, category?: string): MealPeriod {
     if (catLower === "lunch") return "lunch";
     if (catLower === "dinner") return "dinner";
   }
+  return "all-day";
+}
+
+function derivePeriodFromCategory(category: string): MealPeriod {
+  const lower = category.toLowerCase();
+  if (lower === "breakfast") return "breakfast";
+  if (lower === "lunch") return "lunch";
+  if (lower === "dinner") return "dinner";
   return "all-day";
 }
 
@@ -137,13 +151,17 @@ function parseMenuSheet(buffer: ArrayBuffer): ParsedData {
       const categoryCol = findColumn(headers, ["category", "cat", "section", "type", "group", "course"]);
       const periodCol = findColumn(headers, ["service_period", "service period", "period", "meal", "meal period", "time", "availability", "when", "service"]);
 
+      const hasPeriodCol = !!periodCol;
+
       for (const row of rows) {
         const name = getVal(row, nameCol);
         if (!name) continue;
         const rawCat = getVal(row, categoryCol);
         const rawPeriod = getVal(row, periodCol);
         const category = normalizeCategory(rawCat);
-        const meal_period = normalizePeriod(rawPeriod, category);
+        const meal_period = hasPeriodCol
+          ? normalizePeriod(rawPeriod, category)
+          : derivePeriodFromCategory(category);
         const rawPrice = getVal(row, priceCol).replace(/[^0-9.]/g, "");
         const rawImage = getVal(row, imageCol);
         const resolvedImage = resolveImageUrl(rawImage) || rawImage;
@@ -190,12 +208,18 @@ function parseMenuSheet(buffer: ArrayBuffer): ParsedData {
       const nameCol = findColumn(headers, ["name", "restaurant", "business name", "business_name", "restaurant name"]);
       const addrCol = findColumn(headers, ["address", "location", "business address", "business_address", "addr"]);
       const phoneCol = findColumn(headers, ["phone", "telephone", "tel", "contact", "business phone", "business_phone", "number"]);
+      const logoCol = findColumn(headers, ["logo", "logo_url", "logo url", "logo image", "logo link", "business logo"]);
+      const headerCol = findColumn(headers, ["header", "header_image", "header image", "header_image_url", "header image url", "banner", "hero", "cover", "cover image", "background"]);
 
       const row = rows[0];
+      const rawLogo = getVal(row, logoCol);
+      const rawHeader = getVal(row, headerCol);
       result.restaurantInfo = {
         business_name: getVal(row, nameCol) || undefined,
         business_address: getVal(row, addrCol) || undefined,
         business_phone: getVal(row, phoneCol) || undefined,
+        logo_url: rawLogo ? (resolveImageUrl(rawLogo) || rawLogo) : undefined,
+        header_image_url: rawHeader ? (resolveImageUrl(rawHeader) || rawHeader) : undefined,
       };
     }
   }
@@ -228,11 +252,11 @@ function generateTemplate(): ArrayBuffer {
   XLSX.utils.book_append_sheet(wb, galleryWs, "Gallery");
 
   const infoRows = [
-    ["Name", "Address", "Phone"],
-    ["Your Restaurant Name", "123 Main St, City, State 00000", "(555) 000-0000"],
+    ["Name", "Address", "Phone", "Logo", "Header_Image"],
+    ["Your Restaurant Name", "123 Main St, City, State 00000", "(555) 000-0000", "https://drive.google.com/file/d/YOUR_LOGO_ID/view", "https://drive.google.com/file/d/YOUR_HEADER_ID/view"],
   ];
   const infoWs = XLSX.utils.aoa_to_sheet(infoRows);
-  infoWs["!cols"] = [{ wch: 30 }, { wch: 40 }, { wch: 20 }];
+  infoWs["!cols"] = [{ wch: 30 }, { wch: 40 }, { wch: 20 }, { wch: 55 }, { wch: 55 }];
   XLSX.utils.book_append_sheet(wb, infoWs, "Restaurant_Info");
 
   return XLSX.write(wb, { type: "array", bookType: "xlsx" });
@@ -268,6 +292,8 @@ async function importData(data: ParsedData, qc: ReturnType<typeof useQueryClient
       if (data.restaurantInfo.business_name) updates.business_name = data.restaurantInfo.business_name;
       if (data.restaurantInfo.business_address) updates.business_address = data.restaurantInfo.business_address;
       if (data.restaurantInfo.business_phone) updates.business_phone = data.restaurantInfo.business_phone;
+      if (data.restaurantInfo.logo_url) updates.logo_url = data.restaurantInfo.logo_url;
+      if (data.restaurantInfo.header_image_url) updates.header_image_url = data.restaurantInfo.header_image_url;
       if (Object.keys(updates).length > 0) {
         await supabase.from("restaurant_settings").update(updates).eq("id", settings.id);
         qc.invalidateQueries({ queryKey: ["restaurant-settings"] });
@@ -295,7 +321,7 @@ export default function ExcelImporter({ open, onClose }: Props) {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [showCaution, setShowCaution] = useState(false);
   const [cautionTarget, setCautionTarget] = useState<"file" | "mock" | null>(null);
-  const [preview, setPreview] = useState<{ sheets: string[]; menuCount: number; galleryCount: number; hasInfo: boolean } | null>(null);
+  const [preview, setPreview] = useState<{ sheets: string[]; menuCount: number; galleryCount: number; hasInfo: boolean; hasLogo: boolean; hasHeader: boolean } | null>(null);
   const qc = useQueryClient();
 
   const triggerCaution = (target: "file" | "mock") => {
@@ -318,6 +344,8 @@ export default function ExcelImporter({ open, onClose }: Props) {
         menuCount: data.menuItems.length,
         galleryCount: data.galleryItems.length,
         hasInfo: !!data.restaurantInfo?.business_name,
+        hasLogo: !!data.restaurantInfo?.logo_url,
+        hasHeader: !!data.restaurantInfo?.header_image_url,
       });
     } catch {
       setPreview(null);
@@ -458,8 +486,8 @@ export default function ExcelImporter({ open, onClose }: Props) {
               <p className="font-semibold text-foreground text-xs">Sheet detection (any of these names work):</p>
               <p><strong className="text-foreground">Menu sheet:</strong> "Menu", "Items", "Food"</p>
               <p><strong className="text-foreground">Gallery sheet:</strong> "Gallery", "Photos", "Images"</p>
-              <p><strong className="text-foreground">Info sheet:</strong> "Restaurant_Info", "Info", "About"</p>
-              <p className="pt-1 border-t border-border"><strong className="text-foreground">Image URLs:</strong> Google Drive shareable links are auto-converted. Set sharing to "Anyone with the link — Viewer".</p>
+              <p><strong className="text-foreground">Info sheet:</strong> "Restaurant_Info", "Info", "About" — supports Name, Address, Phone, Logo, Header_Image columns</p>
+              <p className="pt-1 border-t border-border"><strong className="text-foreground">Image URLs:</strong> Google Drive links auto-converted. Make sure files are shared as "Anyone with the link — Viewer".</p>
             </div>
           </div>
         </DialogContent>
@@ -480,7 +508,9 @@ export default function ExcelImporter({ open, onClose }: Props) {
                     <p>Sheets: <span className="text-foreground">{preview.sheets.join(", ")}</span></p>
                     {preview.menuCount > 0 && <p className="text-green-400">{preview.menuCount} menu items ready to import</p>}
                     {preview.galleryCount > 0 && <p className="text-green-400">{preview.galleryCount} gallery photos ready to import</p>}
-                    {preview.hasInfo && <p className="text-green-400">Restaurant info detected</p>}
+                    {preview.hasInfo && <p className="text-green-400">Restaurant name / address / phone detected</p>}
+                    {preview.hasLogo && <p className="text-green-400">Logo image detected</p>}
+                    {preview.hasHeader && <p className="text-green-400">Header/banner image detected</p>}
                     {preview.menuCount === 0 && preview.galleryCount === 0 && (
                       <p className="text-amber-400">No data detected — check your column names match the template.</p>
                     )}
