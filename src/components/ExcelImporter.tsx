@@ -45,9 +45,16 @@ type ParsedData = {
   } | null;
 };
 
+const PERIOD_CATEGORY_MAP: Record<string, string> = {
+  breakfast: "Breakfast",
+  lunch: "Lunch",
+  dinner: "Dinner",
+};
+
 function normalizeCategory(raw: string): string {
   if (!raw) return "Sides";
   const trimmed = raw.trim().toLowerCase();
+  if (PERIOD_CATEGORY_MAP[trimmed]) return PERIOD_CATEGORY_MAP[trimmed];
   const exact = [...CATEGORIES].find((c) => c.toLowerCase() === trimmed);
   if (exact) return exact;
   for (const cat of CATEGORIES) {
