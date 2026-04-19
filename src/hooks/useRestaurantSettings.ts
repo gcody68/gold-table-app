@@ -21,6 +21,7 @@ export const DEFAULT_SERVICE_HOURS: ServiceHours = {
 
 export type RestaurantSettings = {
   id: string;
+  owner_id: string | null;
   business_name: string;
   business_address: string | null;
   business_phone: string | null;
@@ -35,19 +36,22 @@ export type RestaurantSettings = {
   show_gallery: boolean | null;
   service_hours: ServiceHours | null;
   unavailable_display: "hide" | "gray" | null;
+  subdomain: string | null;
+  custom_domain: string | null;
 };
 
 export function useRestaurantSettings() {
   return useQuery({
     queryKey: ["restaurant-settings"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("restaurant_settings")
-        .select("*")
-        .limit(1)
-        .single();
+      const { data: { session } } = await supabase.auth.getSession();
+      let query = supabase.from("restaurant_settings").select("*");
+      if (session?.user?.id) {
+        query = query.eq("owner_id", session.user.id);
+      }
+      const { data, error } = await query.limit(1).maybeSingle();
       if (error) throw error;
-      return data as RestaurantSettings;
+      return data as RestaurantSettings | null;
     },
   });
 }

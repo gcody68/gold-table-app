@@ -5,6 +5,7 @@ export type MealPeriod = "breakfast" | "lunch" | "dinner" | "all-day";
 
 export type MenuItem = {
   id: string;
+  restaurant_id: string | null;
   name: string;
   description: string | null;
   price: number;
@@ -52,14 +53,15 @@ export function getMealPeriodStartTime(period: MealPeriod): string {
   }
 }
 
-export function useMenuItems() {
+export function useMenuItems(restaurantId?: string | null) {
   return useQuery({
-    queryKey: ["menu-items"],
+    queryKey: ["menu-items", restaurantId ?? "all"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("menu_items")
-        .select("*")
-        .order("sort_order");
+      let query = supabase.from("menu_items").select("*").order("sort_order");
+      if (restaurantId) {
+        query = query.eq("restaurant_id", restaurantId);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data as MenuItem[];
     },
@@ -75,6 +77,7 @@ export function useCreateMenuItem() {
       price: number;
       image_url: string | null;
       category: string;
+      restaurant_id?: string | null;
       meal_period?: MealPeriod;
       is_available?: boolean;
       daily_stock?: number | null;

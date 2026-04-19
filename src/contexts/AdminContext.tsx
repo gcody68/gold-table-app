@@ -31,8 +31,14 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string): Promise<{ error: string | null }> => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { error: error.message };
+    if (data.session) {
+      await supabase
+        .from("restaurant_settings")
+        .update({ owner_id: data.session.user.id })
+        .is("owner_id", null);
+    }
     return { error: null };
   };
 
@@ -44,7 +50,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     });
     if (error) return { error: error.message };
     if (data.session) {
-      await supabase.from("restaurant_settings").insert({ business_name: restaurantName });
+      await supabase.from("restaurant_settings").insert({
+        business_name: restaurantName,
+        owner_id: data.session.user.id,
+      });
     }
     return { error: null };
   };

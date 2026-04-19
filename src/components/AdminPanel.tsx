@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { uploadImage } from "@/hooks/useImageUpload";
 import { toast } from "sonner";
-import { Save, ImagePlus, Loader as Loader2, X, Trash2, CreditCard, Settings, Monitor, FileSpreadsheet, KeyRound, Clock } from "lucide-react";
+import { Save, ImagePlus, Loader as Loader2, X, Trash2, CreditCard, Settings, Monitor, FileSpreadsheet, KeyRound, Clock, Globe } from "lucide-react";
 import { useAdmin } from "@/contexts/AdminContext";
 import ThemeSelector from "@/components/ThemeSelector";
 import BackgroundStyleSelector, { type BgStyleId, applyBgStyle, getBgStyleById } from "@/components/BackgroundStyleSelector";
@@ -17,6 +17,7 @@ import { STARTER_ITEMS } from "@/components/StarterContent";
 import ExcelImporter from "@/components/ExcelImporter";
 import ChangePasswordModal from "@/components/ChangePasswordModal";
 import ServiceHoursTab from "@/components/ServiceHoursTab";
+import SiteSettingsTab from "@/components/SiteSettingsTab";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -189,7 +190,7 @@ export default function AdminPanel() {
         </div>
 
         <Tabs defaultValue="branding">
-          <TabsList className="w-full mb-6 bg-secondary grid grid-cols-4">
+          <TabsList className="w-full mb-6 bg-secondary grid grid-cols-5">
             <TabsTrigger value="branding" className="gap-1.5">
               <Settings className="w-3.5 h-3.5" /> Branding
             </TabsTrigger>
@@ -201,6 +202,9 @@ export default function AdminPanel() {
             </TabsTrigger>
             <TabsTrigger value="kitchen" className="gap-1.5">
               <Monitor className="w-3.5 h-3.5" /> Kitchen
+            </TabsTrigger>
+            <TabsTrigger value="site" className="gap-1.5">
+              <Globe className="w-3.5 h-3.5" /> Site
             </TabsTrigger>
           </TabsList>
 
@@ -422,6 +426,16 @@ export default function AdminPanel() {
               <div className="text-center py-8 text-muted-foreground">
                 <Monitor className="w-12 h-12 mx-auto mb-3 opacity-30" />
                 <p className="text-sm">Kitchen display is currently disabled.</p>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="site" className="space-y-6">
+            {settings ? (
+              <SiteSettingsTab settings={settings} />
+            ) : (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                Loading settings...
               </div>
             )}
           </TabsContent>

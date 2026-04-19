@@ -87,6 +87,7 @@ export default function CartSidebar() {
           customer_email: customerInfo.email.trim() || null,
           total,
           status: "pending",
+          restaurant_id: settings?.id ?? null,
         })
         .select("id")
         .single();
