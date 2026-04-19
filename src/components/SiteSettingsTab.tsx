@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
 const APP_HOSTNAME = window.location.hostname;
+const SUBDOMAIN_HOST = "gildedtable.com";
 const CNAME_TARGET = `hosted.${APP_HOSTNAME}`;
 
 function CopyButton({ value }: { value: string }) {
@@ -50,10 +51,9 @@ function CnameRow({ label, host, value }: { label: string; host: string; value: 
 function slugify(value: string): string {
   return value
     .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9-]/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
+    .replace(/ /g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-");
 }
 
 type Props = {
@@ -118,7 +118,7 @@ export default function SiteSettingsTab({ settings }: Props) {
   };
 
   const previewUrl = subdomain
-    ? `https://${subdomain}.${APP_HOSTNAME}`
+    ? `https://${subdomain}.${SUBDOMAIN_HOST}`
     : null;
 
   const hasCustomDomain = customDomain.trim().length > 0;
@@ -140,19 +140,19 @@ export default function SiteSettingsTab({ settings }: Props) {
           <p className="text-xs text-muted-foreground -mt-0.5">
             Your restaurant's free hosted address. Only lowercase letters, numbers, and hyphens.
           </p>
-          <div className="flex items-center gap-0 rounded-md border border-border overflow-hidden">
-            <div className="bg-secondary px-3 py-2 text-xs text-muted-foreground border-r border-border whitespace-nowrap">
+          <div className={`flex items-center rounded-md border overflow-hidden transition-colors ${subdomainError ? "border-destructive" : "border-border focus-within:border-gold/60"}`}>
+            <span className="bg-muted/60 px-3 py-2 text-xs text-muted-foreground border-r border-border whitespace-nowrap font-mono select-none">
               https://
-            </div>
+            </span>
             <Input
               value={subdomain}
               onChange={(e) => handleSubdomainChange(e.target.value)}
-              placeholder="joes-diner"
-              className={`rounded-none border-0 border-r border-border bg-secondary focus-visible:ring-0 font-mono text-sm ${subdomainError ? "border-destructive" : ""}`}
+              placeholder="island-cafe"
+              className="rounded-none border-0 bg-secondary focus-visible:ring-0 font-mono text-sm flex-1 min-w-0"
             />
-            <div className="bg-secondary px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
-              .{APP_HOSTNAME}
-            </div>
+            <span className="bg-muted/60 px-3 py-2 text-xs text-muted-foreground border-l border-border whitespace-nowrap font-mono select-none">
+              .{SUBDOMAIN_HOST}
+            </span>
           </div>
           {subdomainError && (
             <p className="text-destructive text-xs flex items-center gap-1">
