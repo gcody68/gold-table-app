@@ -4,6 +4,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { RestaurantProvider, useRestaurant } from "@/contexts/RestaurantContext";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { Session } from "@supabase/supabase-js";
 import Index from "./pages/Index.tsx";
 import Landing from "./pages/Landing.tsx";
 import Kitchen from "./pages/Kitchen.tsx";
@@ -14,14 +17,24 @@ const queryClient = new QueryClient();
 
 function RootRoute() {
   const { resolution } = useRestaurant();
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
 
-  if (resolution.status === "loading") {
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, s) => setSession(s));
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (resolution.status === "loading" || session === undefined) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-gold border-t-transparent animate-spin" />
       </div>
     );
   }
+
+  // Bare domain with logged-in user → show their restaurant dashboard
+  if (resolution.status === "root" && session) return <Index />;
 
   // Bare domain / Vercel URL with no subdomain → show landing page
   if (resolution.status === "root") return <Landing />;
