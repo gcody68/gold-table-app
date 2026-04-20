@@ -7,6 +7,7 @@ import { MOCK_MENU_ITEMS } from "@/lib/mockImportData";
 const DEMO_GUEST_ID_KEY = "gilded_demo_guest_id";
 const DEMO_MENU_KEY = "gilded_demo_menu";
 const DEMO_SETTINGS_KEY = "gilded_demo_settings";
+const DEMO_ORDERS_KEY = "gilded_demo_orders";
 
 
 function generateGuestId(): string {
@@ -127,7 +128,9 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   );
   const [isAdmin, setIsAdmin] = useState(true);
   const [completedSteps, setCompletedSteps] = useState<Set<DemoStep>>(new Set());
-  const [demoOrders, setDemoOrders] = useState<DemoOrder[]>([]);
+  const [demoOrders, setDemoOrders] = useState<DemoOrder[]>(() =>
+    loadFromStorage<DemoOrder[]>(DEMO_ORDERS_KEY, [])
+  );
   const [syncPulse, setSyncPulse] = useState(false);
   const [phoneHighlight, setPhoneHighlight] = useState(false);
   const pulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -140,6 +143,23 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     saveToStorage(DEMO_SETTINGS_KEY, settings);
   }, [settings]);
+
+  useEffect(() => {
+    saveToStorage(DEMO_ORDERS_KEY, demoOrders);
+  }, [demoOrders]);
+
+  // Sync orders across tabs (e.g. kitchen tab picks up orders placed in demo tab)
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key === DEMO_ORDERS_KEY && e.newValue) {
+        try {
+          setDemoOrders(JSON.parse(e.newValue) as DemoOrder[]);
+        } catch {}
+      }
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
 
   const triggerSync = useCallback(() => {
     setSyncPulse(true);
@@ -229,6 +249,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(DEMO_MENU_KEY);
     localStorage.removeItem(DEMO_SETTINGS_KEY);
     localStorage.removeItem(DEMO_GUEST_ID_KEY);
+    localStorage.removeItem(DEMO_ORDERS_KEY);
   }, []);
 
   return (
