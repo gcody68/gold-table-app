@@ -17,8 +17,8 @@ type Props = {
   onChange: (hours: ServiceHours) => void;
   businessHours: BusinessHours;
   onBusinessHoursChange: (hours: BusinessHours) => void;
-  unavailableDisplay: "hide" | "gray";
-  onDisplayChange: (val: "hide" | "gray") => void;
+  unavailableDisplay?: "hide" | "gray";
+  onDisplayChange?: (val: "hide" | "gray") => void;
 };
 
 export default function ServiceHoursTab({
@@ -26,8 +26,6 @@ export default function ServiceHoursTab({
   onChange,
   businessHours,
   onBusinessHoursChange,
-  unavailableDisplay,
-  onDisplayChange,
 }: Props) {
   const updateShift = (key: MealKey, patch: Partial<ShiftConfig>) => {
     onChange({ ...serviceHours, [key]: { ...serviceHours[key], ...patch } });
@@ -135,41 +133,16 @@ export default function ServiceHoursTab({
         </div>
       </div>
 
-      {/* ── Out-of-Hours Display ── */}
+      {/* ── Menu Ordering Behaviour ── */}
       <div className="border-t border-border pt-5">
-        <p className="text-sm font-semibold text-foreground mb-1">Out-of-Hours Display</p>
-        <p className="text-xs text-muted-foreground mb-3">
-          Choose how items appear to customers when they are outside their scheduled shift window.
-        </p>
-
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => onDisplayChange("hide")}
-            className={`rounded-lg border p-4 text-left transition-colors ${
-              unavailableDisplay === "hide"
-                ? "border-gold bg-gold/10 text-foreground"
-                : "border-border bg-secondary/30 text-muted-foreground hover:border-gold/40"
-            }`}
-          >
-            <p className="text-sm font-medium">Hide Items</p>
-            <p className="text-xs mt-0.5 opacity-75">
-              Items not in the current shift disappear from the menu entirely.
-            </p>
-          </button>
-
-          <button
-            onClick={() => onDisplayChange("gray")}
-            className={`rounded-lg border p-4 text-left transition-colors ${
-              unavailableDisplay === "gray"
-                ? "border-gold bg-gold/10 text-foreground"
-                : "border-border bg-secondary/30 text-muted-foreground hover:border-gold/40"
-            }`}
-          >
-            <p className="text-sm font-medium">Gray-out Items</p>
-            <p className="text-xs mt-0.5 opacity-75">
-              Items stay visible but are dimmed with a disabled "Available during [period]" button.
-            </p>
-          </button>
+        <p className="text-sm font-semibold text-foreground mb-2">Menu Ordering &amp; Availability</p>
+        <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-2 text-xs text-muted-foreground leading-relaxed">
+          <p>
+            <span className="text-foreground font-medium">Smart ordering —</span> Items currently being served ("Now Serving") and items available all day are automatically sorted to the top of each category, reducing customer scrolling.
+          </p>
+          <p>
+            <span className="text-foreground font-medium">Out-of-window items —</span> Items outside their scheduled service window remain visible but are disabled — customers can see them on the menu yet cannot add them to an order until that service period opens.
+          </p>
         </div>
       </div>
     </div>
