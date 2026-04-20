@@ -104,8 +104,9 @@ export default function CartSidebar({ restaurantId }: { restaurantId?: string | 
           restaurant_id: settings?.id ?? null,
         })
         .select("id")
-        .single();
+        .maybeSingle();
       if (orderErr) throw orderErr;
+      if (!order) throw new Error("Order was not created");
 
       const orderItems = items.map((i) => ({
         order_id: order.id,
