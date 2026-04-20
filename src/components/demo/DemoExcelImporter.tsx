@@ -7,18 +7,51 @@ import { FileSpreadsheet, Upload, Download, Loader as Loader2 } from "lucide-rea
 import { CATEGORIES, type MealPeriod } from "@/hooks/useMenuItems";
 import { useDemo } from "@/contexts/DemoContext";
 
-function normalizeCategory(raw: string): string {
-  const trimmed = raw.trim();
-  const lower = trimmed.toLowerCase();
-  const match = [...CATEGORIES].find((c) => c.toLowerCase() === lower);
-  return match ?? "Breakfast";
+function findColumn(headers: string[], candidates: string[]): string | null {
+  const normalized = headers.map((h) => (h || "").toString().trim().toLowerCase().replace(/[^a-z0-9]/g, ""));
+  for (const candidate of candidates) {
+    const needle = candidate.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const idx = normalized.findIndex((h) => h === needle);
+    if (idx !== -1) return headers[idx];
+  }
+  for (const candidate of candidates) {
+    const needle = candidate.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const idx = normalized.findIndex((h) => h.includes(needle) || needle.includes(h));
+    if (idx !== -1) return headers[idx];
+  }
+  return null;
 }
 
-function normalizePeriod(raw: string): MealPeriod {
-  const lower = raw.trim().toLowerCase();
-  if (lower === "breakfast") return "breakfast";
-  if (lower === "lunch") return "lunch";
-  if (lower === "dinner") return "dinner";
+function getVal(row: Record<string, unknown>, col: string | null): string {
+  if (!col) return "";
+  const val = row[col];
+  if (val == null) return "";
+  return String(val).trim();
+}
+
+function normalizeCategory(raw: string): string {
+  if (!raw) return "General";
+  const trimmed = raw.trim().toLowerCase();
+  const exact = [...CATEGORIES].find((c) => c.toLowerCase() === trimmed);
+  if (exact) return exact;
+  for (const cat of CATEGORIES) {
+    if (trimmed.includes(cat.toLowerCase())) return cat;
+  }
+  return "General";
+}
+
+function normalizePeriod(raw: string, category?: string): MealPeriod {
+  const lower = (raw || "").trim().toLowerCase();
+  if (lower.includes("breakfast") || lower === "am") return "breakfast";
+  if (lower.includes("lunch") || lower === "midday") return "lunch";
+  if (lower.includes("dinner") || lower === "pm" || lower === "evening") return "dinner";
+  if (lower.includes("all") || lower === "always" || lower === "anytime") return "all-day";
+  if (category) {
+    const catLower = category.toLowerCase();
+    if (catLower === "breakfast") return "breakfast";
+    if (catLower === "lunch") return "lunch";
+    if (catLower === "dinner") return "dinner";
+  }
   return "all-day";
 }
 
@@ -55,24 +88,37 @@ export default function DemoExcelImporter({ open, onClose }: Props) {
       const wb = XLSX.read(buffer, { type: "array" });
       const sheetName = wb.SheetNames.find((n) => n.toLowerCase() === "menu") ?? wb.SheetNames[0];
       if (!sheetName) throw new Error("No sheets found in file");
-      const rows = XLSX.utils.sheet_to_json<Record<string, string>>(wb.Sheets[sheetName], { defval: "" });
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[sheetName], { defval: "" });
       let count = 0;
-      for (const row of rows) {
-        const name = String(row["Name"] || row["name"] || "").trim();
-        if (!name) continue;
-        createMenuItem({
-          name,
-          description: String(row["Description"] || row["description"] || "").trim(),
-          price: parseFloat(String(row["Price"] || row["price"] || "0").replace(/[^0-9.]/g, "")) || 0,
-          image_url: String(row["Image_URL"] || row["image_url"] || "").trim() || null,
-          category: normalizeCategory(String(row["Category"] || row["category"] || "Breakfast")),
-          meal_period: normalizePeriod(String(row["Service_Period"] || row["service_period"] || "")),
-          is_available: true,
-          daily_stock: null,
-        });
-        count++;
+      if (rows.length > 0) {
+        const headers = Object.keys(rows[0]);
+        const nameCol = findColumn(headers, ["name", "item name", "item", "dish name", "dish", "menu item", "product"]);
+        const descCol = findColumn(headers, ["description", "desc", "details", "info", "about", "notes"]);
+        const priceCol = findColumn(headers, ["price", "cost", "amount", "rate", "charge", "fee"]);
+        const imageCol = findColumn(headers, ["image_url", "image url", "image", "url", "pic", "picture", "photo url", "photo_url", "photo", "img_url", "img", "link"]);
+        const categoryCol = findColumn(headers, ["category", "cat", "section", "type", "group", "course"]);
+        const periodCol = findColumn(headers, ["service period", "service_period", "period", "meal period", "meal_period", "meal", "availability", "when", "service"]);
+
+        for (const row of rows) {
+          const name = getVal(row, nameCol);
+          if (!name) continue;
+          const rawCat = getVal(row, categoryCol);
+          const category = normalizeCategory(rawCat);
+          const meal_period = normalizePeriod(getVal(row, periodCol), category);
+          createMenuItem({
+            name,
+            description: getVal(row, descCol),
+            price: parseFloat(getVal(row, priceCol).replace(/[^0-9.]/g, "")) || 0,
+            image_url: getVal(row, imageCol) || null,
+            category,
+            meal_period,
+            is_available: true,
+            daily_stock: null,
+          });
+          count++;
+        }
       }
-      toast.success(`Added ${count} items to demo menu`);
+      toast.success(`Success! ${count} menu ${count === 1 ? "item" : "items"} imported.`);
       onClose();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Import failed");
@@ -119,7 +165,7 @@ export default function DemoExcelImporter({ open, onClose }: Props) {
               </>
             )}
           </div>
-          <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileSelect} />
+          <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFileSelect} />
 
           <Button variant="outline" className="w-full gap-2" onClick={handleDownloadTemplate} disabled={loading}>
             <Download className="w-4 h-4" />

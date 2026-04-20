@@ -52,7 +52,7 @@ const PERIOD_CATEGORY_MAP: Record<string, string> = {
 };
 
 function normalizeCategory(raw: string): string {
-  if (!raw) return "Sides";
+  if (!raw) return "General";
   const trimmed = raw.trim().toLowerCase();
   if (PERIOD_CATEGORY_MAP[trimmed]) return PERIOD_CATEGORY_MAP[trimmed];
   const exact = [...CATEGORIES].find((c) => c.toLowerCase() === trimmed);
@@ -60,7 +60,7 @@ function normalizeCategory(raw: string): string {
   for (const cat of CATEGORIES) {
     if (trimmed.includes(cat.toLowerCase())) return cat;
   }
-  return "Sides";
+  return "General";
 }
 
 function normalizePeriod(raw: string, category?: string): MealPeriod {
@@ -151,12 +151,12 @@ function parseMenuSheet(buffer: ArrayBuffer): ParsedData {
     if (rows.length > 0) {
       const headers = Object.keys(rows[0]);
 
-      const nameCol = findColumn(headers, ["name", "item", "item name", "dish", "dish name", "product", "menu item"]);
-      const descCol = findColumn(headers, ["description", "desc", "details", "info", "about"]);
-      const priceCol = findColumn(headers, ["price", "cost", "amount", "rate", "charge"]);
-      const imageCol = findColumn(headers, ["image_url", "image url", "image", "photo", "photo url", "photo_url", "img", "img_url", "picture", "url", "link", "google drive", "drive link"]);
-      const categoryCol = findColumn(headers, ["category", "cat", "section", "type", "group", "course"]);
-      const periodCol = findColumn(headers, ["service_period", "service period", "period", "meal", "meal period", "time", "availability", "when", "service"]);
+      const nameCol = findColumn(headers, ["name", "item name", "item", "dish name", "dish", "menu item", "product"]);
+      const descCol = findColumn(headers, ["description", "desc", "details", "info", "about", "notes"]);
+      const priceCol = findColumn(headers, ["price", "cost", "amount", "rate", "charge", "fee"]);
+      const imageCol = findColumn(headers, ["image_url", "image url", "image", "url", "pic", "picture", "photo url", "photo_url", "photo", "img_url", "img", "link", "google drive", "drive link"]);
+      const categoryCol = findColumn(headers, ["category", "cat", "section", "type", "group", "course", "genre"]);
+      const periodCol = findColumn(headers, ["service period", "service_period", "period", "meal period", "meal_period", "meal", "availability", "when", "service", "time of day"]);
 
       const hasPeriodCol = !!periodCol;
 
@@ -397,7 +397,7 @@ export default function ExcelImporter({ open, onClose }: Props) {
       if (data.galleryItems.length) parts.push(`${data.galleryItems.length} gallery photos`);
       if (data.restaurantInfo?.business_name) parts.push("restaurant info");
 
-      toast.success(`Imported ${count} records — ${parts.join(", ")}`);
+      toast.success(`Success! ${count} ${count === 1 ? "record" : "records"} imported — ${parts.join(", ")}.`);
       onClose();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Import failed");
@@ -461,7 +461,7 @@ export default function ExcelImporter({ open, onClose }: Props) {
                 </>
               )}
             </div>
-            <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileSelect} />
+            <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFileSelect} />
 
             <Button
               variant="outline"
