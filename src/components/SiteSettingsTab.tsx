@@ -8,9 +8,9 @@ import type { RestaurantSettings } from "@/hooks/useRestaurantSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
-const APP_HOSTNAME = window.location.hostname;
 const SUBDOMAIN_HOST = "gildedtable.com";
-const CNAME_TARGET = `hosted.${APP_HOSTNAME}`;
+const VERCEL_IP = "76.76.21.21";
+const VERCEL_CNAME = "cname.vercel-dns.com";
 
 function CopyButton({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
@@ -30,10 +30,13 @@ function CopyButton({ value }: { value: string }) {
   );
 }
 
-function CnameRow({ label, host, value }: { label: string; host: string; value: string }) {
+function DnsRow({ type, host, value }: { type: string; host: string; value: string }) {
   return (
     <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm border border-border rounded-lg p-3 bg-secondary/30">
-      <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider col-span-2 mb-1">{label}</span>
+      <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider col-span-2 mb-1 flex items-center gap-2">
+        <span className="bg-gold/20 text-gold font-mono px-1.5 py-0.5 rounded text-[10px]">{type}</span>
+        record
+      </span>
       <span className="text-xs text-muted-foreground w-12">Host</span>
       <div className="flex items-center gap-2 min-w-0">
         <code className="font-mono text-xs text-foreground truncate">{host}</code>
@@ -215,41 +218,33 @@ export default function SiteSettingsTab({ settings }: Props) {
           <h3 className="text-sm font-semibold text-foreground">Domain Configuration</h3>
         </div>
         <p className="text-xs text-muted-foreground">
-          Add these DNS records at your domain registrar (e.g. Cloudflare, GoDaddy, Namecheap).
+          Add these two DNS records at your domain registrar (e.g. Wix, GoDaddy, Namecheap, Cloudflare).
           Changes can take up to 48 hours to propagate.
         </p>
 
         <div className="space-y-3">
-          <CnameRow
-            label="Subdomain CNAME"
-            host={subdomain ? `${subdomain}` : "<your-subdomain>"}
-            value={CNAME_TARGET}
-          />
-
-          {hasCustomDomain ? (
-            <CnameRow
-              label="Custom Domain CNAME"
-              host={customDomain}
-              value={CNAME_TARGET}
-            />
-          ) : (
-            <div className="rounded-lg border border-border border-dashed p-4 text-center">
-              <Globe className="w-6 h-6 text-muted-foreground/40 mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground">
-                Enter a custom domain above to see your CNAME record.
-              </p>
-            </div>
-          )}
+          <DnsRow type="A" host="@" value={VERCEL_IP} />
+          <DnsRow type="CNAME" host="www" value={VERCEL_CNAME} />
         </div>
 
         <div className="rounded-lg bg-amber-500/10 border border-amber-500/25 p-3 space-y-1">
-          <p className="text-xs font-semibold text-amber-400">DNS Record Type: CNAME</p>
+          <p className="text-xs font-semibold text-amber-400">Tips for your DNS provider</p>
           <ul className="text-xs text-amber-400/80 space-y-0.5 list-disc list-inside">
-            <li>Set the <strong>Type</strong> field to <code className="font-mono">CNAME</code></li>
             <li>Set <strong>TTL</strong> to <code className="font-mono">Auto</code> or <code className="font-mono">3600</code></li>
             <li>Disable any proxy (e.g. Cloudflare orange cloud) until verified</li>
+            <li>In Wix, go to <strong>Domains → DNS Records</strong> to add these</li>
           </ul>
         </div>
+
+        <a
+          href="https://dnschecker.org"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs text-gold hover:text-gold/80 transition-colors"
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+          Check if your DNS changes have propagated at dnschecker.org
+        </a>
       </div>
     </div>
   );
