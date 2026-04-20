@@ -8,14 +8,6 @@ const DEMO_GUEST_ID_KEY = "gilded_demo_guest_id";
 const DEMO_MENU_KEY = "gilded_demo_menu";
 const DEMO_SETTINGS_KEY = "gilded_demo_settings";
 
-export function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
 
 function generateGuestId(): string {
   return `guest_${Math.random().toString(36).slice(2, 10)}_${Date.now()}`;

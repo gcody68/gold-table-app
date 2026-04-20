@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ImagePlus, Loader as Loader2, Link as LinkIcon, Upload } from "lucide-react";
-import { readFileAsDataUrl } from "@/contexts/DemoContext";
+import { uploadImage, ImageTooLargeError } from "@/hooks/useImageUpload";
 import { toast } from "sonner";
 
 type Props = {
@@ -12,6 +12,7 @@ type Props = {
   label?: string;
   hint?: string;
   objectFit?: "cover" | "contain";
+  folder?: string;
 };
 
 export default function DemoImagePicker({
@@ -21,21 +22,26 @@ export default function DemoImagePicker({
   label,
   hint,
   objectFit = "cover",
+  folder = "demo",
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [urlInput, setUrlInput] = useState(value.startsWith("data:") ? "" : value);
+  const [urlInput, setUrlInput] = useState(value.startsWith("http") ? value : "");
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      onChange(dataUrl);
+      const url = await uploadImage(file, folder);
+      onChange(url);
       setUrlInput("");
-    } catch {
-      toast.error("Failed to read image");
+    } catch (err) {
+      if (err instanceof ImageTooLargeError) {
+        toast.error(err.message);
+      } else {
+        toast.error("Failed to upload image. Please try again.");
+      }
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -62,7 +68,10 @@ export default function DemoImagePicker({
         className={`w-full ${aspectClass} rounded-lg bg-secondary border-2 border-dashed border-border hover:border-gold/40 cursor-pointer flex items-center justify-center overflow-hidden transition-colors group`}
       >
         {uploading ? (
-          <Loader2 className="w-6 h-6 text-gold animate-spin" />
+          <div className="flex flex-col items-center gap-2 text-gold">
+            <Loader2 className="w-6 h-6 animate-spin" />
+            <span className="text-xs">Uploading...</span>
+          </div>
         ) : value ? (
           <div className="relative w-full h-full">
             <img
@@ -95,16 +104,7 @@ export default function DemoImagePicker({
           placeholder="or paste an image URL (https://...)"
           className="bg-secondary border-border text-xs h-8"
         />
-        {value && !value.startsWith("data:") && (
-          <button
-            type="button"
-            onClick={() => { onChange(""); setUrlInput(""); }}
-            className="text-xs text-muted-foreground hover:text-destructive transition-colors whitespace-nowrap"
-          >
-            Clear
-          </button>
-        )}
-        {value && value.startsWith("data:") && (
+        {value && (
           <button
             type="button"
             onClick={() => { onChange(""); setUrlInput(""); }}
