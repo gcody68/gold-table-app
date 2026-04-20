@@ -32,8 +32,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export default function AdminPanel() {
-  const { data: settings } = useRestaurantSettings();
+type Props = { restaurantId?: string | null };
+
+export default function AdminPanel({ restaurantId }: Props) {
+  const { data: settings } = useRestaurantSettings(restaurantId);
   const update = useUpdateSettings();
   const { logout } = useAdmin();
   const demo = useDemoMode();

@@ -30,7 +30,7 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-background">
       <AppNavbar restaurantId={restaurantId} showAdmin={showAdmin} onToggleAdmin={() => setShowAdmin((v) => !v)} />
-      {isAdmin && showAdmin && <AdminPanel />}
+      {isAdmin && showAdmin && <AdminPanel restaurantId={restaurantId} />}
       <HeroSection restaurantId={restaurantId} />
       <MenuGrid restaurantId={restaurantId} />
       <GallerySection restaurantId={restaurantId} />
