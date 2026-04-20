@@ -273,8 +273,16 @@ async function importData(data: ParsedData, qc: ReturnType<typeof useQueryClient
   let totalImported = 0;
 
   if (data.menuItems.length > 0) {
+    const { data: settings, error: settingsError } = await supabase
+      .from("restaurant_settings")
+      .select("id")
+      .limit(1)
+      .maybeSingle();
+    if (settingsError) throw new Error(`Could not load restaurant settings: ${settingsError.message}`);
+
     const items = data.menuItems.map((item, i) => ({
       ...item,
+      restaurant_id: settings?.id ?? null,
       sort_order: 1000 + i,
       is_placeholder: false,
     }));
