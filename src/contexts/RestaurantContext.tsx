@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 const SUBDOMAIN_HOST = "gildedtable.com";
-const VERCEL_HOSTS = ["vercel.app", "localhost"];
 
 export type RestaurantResolution =
   | { status: "loading" }
@@ -14,18 +13,21 @@ export type RestaurantResolution =
 function resolveHostnameSlug(): string | null {
   const hostname = window.location.hostname;
 
-  // localhost always resolves as root (dev)
+  // Dev / localhost → root
   if (hostname === "localhost" || hostname === "127.0.0.1") return null;
 
-  // Vercel preview / bare app URLs → root landing
-  if (VERCEL_HOSTS.some((h) => hostname.endsWith(h))) return null;
-
-  // subdomain.gildedtable.com → extract subdomain
+  // subdomain.gildedtable.com → extract subdomain slug
   if (hostname.endsWith(`.${SUBDOMAIN_HOST}`)) {
     return hostname.slice(0, -(SUBDOMAIN_HOST.length + 1));
   }
 
-  // Custom domain — return the full hostname so we can look it up by custom_domain
+  // Bare gildedtable.com → root landing
+  if (hostname === SUBDOMAIN_HOST) return null;
+
+  // Vercel deployment URLs (vercel.app or any *.vercel.app) → root landing
+  if (hostname === "vercel.app" || hostname.endsWith(".vercel.app")) return null;
+
+  // Any other hostname → treat as a potential custom domain, look it up
   return hostname;
 }
 
@@ -81,3 +83,6 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
 export function useRestaurant() {
   return useContext(RestaurantContext);
 }
+
+
+export { RestaurantProvider, useRestaurant }
