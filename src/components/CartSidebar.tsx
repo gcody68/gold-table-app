@@ -125,7 +125,7 @@ export default function CartSidebar({ restaurantId }: { restaurantId?: string | 
         .filter((i) => i.menuItem.daily_stock != null)
         .map((i) => ({ id: i.menuItem.id, quantity: i.quantity }));
       if (stockItems.length > 0) {
-        await decrementStock.mutateAsync(stockItems);
+        try { await decrementStock.mutateAsync(stockItems); } catch { /* non-critical */ }
       }
 
       setStep("confirmation");
