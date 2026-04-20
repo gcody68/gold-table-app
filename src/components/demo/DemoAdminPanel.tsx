@@ -9,10 +9,9 @@ import ThemeSelector from "@/components/ThemeSelector";
 import BackgroundStyleSelector, { type BgStyleId, applyBgStyle, getBgStyleById } from "@/components/BackgroundStyleSelector";
 import { type ThemeId, applyTheme, getThemeById } from "@/lib/themes";
 import { toast } from "sonner";
-import { Settings, Clock, FileSpreadsheet, Save, Sparkles } from "lucide-react";
+import { Settings, Clock, FileSpreadsheet, Save, Sparkles, Lock } from "lucide-react";
 import ServiceHoursTab from "@/components/ServiceHoursTab";
-import { type ServiceHours, DEFAULT_SERVICE_HOURS } from "@/hooks/useRestaurantSettings";
-import DemoExcelImporter from "./DemoExcelImporter";
+import { type ServiceHours, type BusinessHours, DEFAULT_SERVICE_HOURS, DEFAULT_BUSINESS_HOURS } from "@/hooks/useRestaurantSettings";
 
 export default function DemoAdminPanel() {
   const { settings, updateSettings, loadSampleMenu, menuItems } = useDemo();
@@ -24,8 +23,8 @@ export default function DemoAdminPanel() {
   const [bgStyle, setBgStyle] = useState<BgStyleId>((settings.bg_style as BgStyleId) ?? "forest-dark");
   const [showGallery, setShowGallery] = useState(settings.show_gallery ?? false);
   const [serviceHours, setServiceHours] = useState<ServiceHours>(settings.service_hours ?? DEFAULT_SERVICE_HOURS);
+  const [businessHours, setBusinessHours] = useState<BusinessHours>(settings.business_hours ?? DEFAULT_BUSINESS_HOURS);
   const [unavailableDisplay, setUnavailableDisplay] = useState<"hide" | "gray">(settings.unavailable_display ?? "hide");
-  const [showImporter, setShowImporter] = useState(false);
   const [loadingMenu, setLoadingMenu] = useState(false);
 
   const handleThemeChange = (id: ThemeId) => {
@@ -51,6 +50,7 @@ export default function DemoAdminPanel() {
       bg_style: bgStyle,
       show_gallery: showGallery,
       service_hours: serviceHours,
+      business_hours: businessHours,
       unavailable_display: unavailableDisplay,
     });
     toast.success("Settings saved!");
@@ -133,8 +133,10 @@ export default function DemoAdminPanel() {
         <TabsContent value="hours">
           <ServiceHoursTab
             serviceHours={serviceHours}
-            unavailableDisplay={unavailableDisplay}
             onChange={(hours) => setServiceHours(hours)}
+            businessHours={businessHours}
+            onBusinessHoursChange={(hours) => setBusinessHours(hours)}
+            unavailableDisplay={unavailableDisplay}
             onDisplayChange={(v) => setUnavailableDisplay(v)}
           />
           <Button onClick={handleSave} size="sm" className="w-full gradient-gold text-primary-foreground font-semibold gap-1.5 h-8 text-xs mt-4">
@@ -167,25 +169,17 @@ export default function DemoAdminPanel() {
 
           <div className="border-b border-border" />
 
-          <div>
-            <p className="text-xs font-medium text-foreground mb-1">Import from Excel</p>
-            <p className="text-xs text-muted-foreground mb-2">
-              Have your own spreadsheet? Upload a .xlsx file to populate the demo menu.
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full gap-1.5 border-border text-xs h-8"
-              onClick={() => setShowImporter(true)}
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              Import from Excel
-            </Button>
+          <div className="rounded-lg border border-border bg-secondary/40 p-3 flex items-start gap-2.5">
+            <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-medium text-foreground">Import from Excel</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Unavailable in Demo. Use <span className="text-gold font-medium">Load Sample Menu</span> above, or start a free account to import your own spreadsheet.
+              </p>
+            </div>
           </div>
         </TabsContent>
       </Tabs>
-
-      {showImporter && <DemoExcelImporter open={showImporter} onClose={() => setShowImporter(false)} />}
     </div>
   );
 }

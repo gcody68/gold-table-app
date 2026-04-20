@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from "react";
 import type { MenuItem, MealPeriod } from "@/hooks/useMenuItems";
 import type { RestaurantSettings } from "@/hooks/useRestaurantSettings";
-import { DEFAULT_SERVICE_HOURS } from "@/hooks/useRestaurantSettings";
+import { DEFAULT_SERVICE_HOURS, DEFAULT_BUSINESS_HOURS } from "@/hooks/useRestaurantSettings";
 import { MOCK_MENU_ITEMS } from "@/lib/mockImportData";
 
 const DEMO_GUEST_ID_KEY = "gilded_demo_guest_id";
@@ -22,6 +22,7 @@ function getOrCreateGuestId(): string {
 
 const DEFAULT_DEMO_SETTINGS: RestaurantSettings = {
   id: "demo",
+  owner_id: null,
   business_name: "The Golden Fork",
   business_address: "88 Ocean Drive, Honolulu, HI 96815",
   business_phone: "(808) 555-0188",
@@ -35,7 +36,10 @@ const DEFAULT_DEMO_SETTINGS: RestaurantSettings = {
   kitchen_view_enabled: true,
   show_gallery: true,
   service_hours: DEFAULT_SERVICE_HOURS,
+  business_hours: DEFAULT_BUSINESS_HOURS,
   unavailable_display: "hide",
+  subdomain: null,
+  custom_domain: null,
 };
 
 function buildDefaultMenuItems(): MenuItem[] {
