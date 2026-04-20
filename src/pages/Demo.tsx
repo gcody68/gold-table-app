@@ -36,6 +36,7 @@ function DemoContent() {
   } = useDemo();
 
   const [showAdmin, setShowAdmin] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(true);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
 
   // Enable in-memory image uploads
@@ -86,7 +87,10 @@ function DemoContent() {
     queryClient.setQueryData(["gallery-items", null], galleryItems);
   }, [galleryItems, queryClient]);
 
-  const handleLogout = useCallback(() => setShowAdmin(false), []);
+  const handleLogout = useCallback(() => {
+    setShowAdmin(false);
+    setIsAdminLoggedIn(false);
+  }, []);
 
   const demoMode = useMemo<DemoModeContextType>(
     () => ({
@@ -156,7 +160,7 @@ function DemoContent() {
   return (
     <QueryClientProvider client={queryClient}>
       <DemoModeProvider value={demoMode}>
-        <DemoAdminProvider onLogout={handleLogout}>
+        <DemoAdminProvider onLogout={handleLogout} onLogin={() => { setIsAdminLoggedIn(true); setShowAdmin(true); }} isAdmin={isAdminLoggedIn}>
           <div className="min-h-screen bg-background">
             {/* Demo banner */}
             <div className="bg-amber-950/60 border-b border-amber-700/40 px-4 py-2 flex items-center justify-between gap-4">

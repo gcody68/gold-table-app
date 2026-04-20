@@ -18,15 +18,19 @@ const DemoAdminOverrideContext = createContext<AdminContextType | null>(null);
 export function DemoAdminProvider({
   children,
   onLogout,
+  onLogin,
+  isAdmin = true,
 }: {
   children: ReactNode;
   onLogout: () => void;
+  onLogin?: () => void;
+  isAdmin?: boolean;
 }) {
   const value: AdminContextType = {
-    isAdmin: true,
+    isAdmin,
     session: null,
-    login: async () => ({ error: null }),
-    signUp: async () => ({ error: null }),
+    login: async () => { onLogin?.(); return { error: null }; },
+    signUp: async () => { onLogin?.(); return { error: null }; },
     logout: onLogout,
   };
   return (
