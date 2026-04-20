@@ -83,6 +83,3 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
 export function useRestaurant() {
   return useContext(RestaurantContext);
 }
-
-
-export { RestaurantProvider, useRestaurant }
