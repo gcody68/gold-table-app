@@ -13,22 +13,16 @@ export type RestaurantResolution =
 function resolveHostnameSlug(): string | null {
   const hostname = window.location.hostname;
 
-  // Dev / localhost → root
-  if (hostname === "localhost" || hostname === "127.0.0.1") return null;
-
   // subdomain.gildedtable.com → extract subdomain slug
   if (hostname.endsWith(`.${SUBDOMAIN_HOST}`)) {
     return hostname.slice(0, -(SUBDOMAIN_HOST.length + 1));
   }
 
-  // Bare gildedtable.com → root landing
-  if (hostname === SUBDOMAIN_HOST) return null;
-
-  // Vercel deployment URLs (vercel.app or any *.vercel.app) → root landing
-  if (hostname === "vercel.app" || hostname.endsWith(".vercel.app")) return null;
-
-  // Any other hostname → treat as a potential custom domain, look it up
-  return hostname;
+  // Any other hostname (localhost, vercel.app, bolt previews, custom domains
+  // not yet configured) → show root landing page.
+  // Custom domains that ARE configured get looked up via the subdomain path above
+  // once DNS is pointed to gildedtable.com, or can be added here explicitly.
+  return null;
 }
 
 type RestaurantContextType = {
