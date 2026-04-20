@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoMode } from "@/contexts/DemoModeContext";
 
 export type MealPeriod = "breakfast" | "lunch" | "dinner" | "all-day";
 
@@ -54,9 +55,11 @@ export function getMealPeriodStartTime(period: MealPeriod): string {
 }
 
 export function useMenuItems(restaurantId?: string | null) {
+  const demo = useDemoMode();
   return useQuery({
     queryKey: ["menu-items", restaurantId ?? "all"],
     queryFn: async () => {
+      if (demo) return demo.getMenuItems();
       let query = supabase.from("menu_items").select("*").order("sort_order");
       if (restaurantId) {
         query = query.eq("restaurant_id", restaurantId);
@@ -70,6 +73,7 @@ export function useMenuItems(restaurantId?: string | null) {
 
 export function useCreateMenuItem() {
   const qc = useQueryClient();
+  const demo = useDemoMode();
   return useMutation({
     mutationFn: async (item: {
       name: string;
@@ -82,6 +86,20 @@ export function useCreateMenuItem() {
       is_available?: boolean;
       daily_stock?: number | null;
     }) => {
+      if (demo) {
+        demo.createMenuItem({
+          name: item.name,
+          description: item.description,
+          price: item.price,
+          image_url: item.image_url,
+          category: item.category,
+          meal_period: item.meal_period ?? "all-day",
+          is_available: item.is_available ?? true,
+          daily_stock: item.daily_stock ?? null,
+          restaurant_id: null,
+        });
+        return;
+      }
       let restaurant_id = item.restaurant_id ?? null;
       if (!restaurant_id) {
         const { data: { session } } = await supabase.auth.getSession();
@@ -107,8 +125,10 @@ export function useCreateMenuItem() {
 
 export function useUpsertMenuItem() {
   const qc = useQueryClient();
+  const demo = useDemoMode();
   return useMutation({
     mutationFn: async (item: Partial<MenuItem> & { id: string }) => {
+      if (demo) { demo.upsertMenuItem(item.id, item); return; }
       const { id, ...rest } = item;
       const { error } = await supabase
         .from("menu_items")
@@ -122,8 +142,10 @@ export function useUpsertMenuItem() {
 
 export function useDeleteMenuItem() {
   const qc = useQueryClient();
+  const demo = useDemoMode();
   return useMutation({
     mutationFn: async (id: string) => {
+      if (demo) { demo.deleteMenuItem(id); return; }
       const { error } = await supabase.from("menu_items").delete().eq("id", id);
       if (error) throw error;
     },
@@ -133,8 +155,10 @@ export function useDeleteMenuItem() {
 
 export function useDecrementStock() {
   const qc = useQueryClient();
+  const demo = useDemoMode();
   return useMutation({
     mutationFn: async (items: { id: string; quantity: number }[]) => {
+      if (demo) { demo.decrementStock(items); return; }
       for (const { id, quantity } of items) {
         const { data } = await supabase
           .from("menu_items")

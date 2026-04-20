@@ -8,6 +8,7 @@ import { uploadImage } from "@/hooks/useImageUpload";
 import { toast } from "sonner";
 import { Save, ImagePlus, Loader as Loader2, X, Trash2, CreditCard, Settings, Monitor, FileSpreadsheet, KeyRound, Clock, Globe } from "lucide-react";
 import { useAdmin } from "@/contexts/AdminContext";
+import { useDemoMode } from "@/contexts/DemoModeContext";
 import ThemeSelector from "@/components/ThemeSelector";
 import BackgroundStyleSelector, { type BgStyleId, applyBgStyle, getBgStyleById } from "@/components/BackgroundStyleSelector";
 import { type ThemeId, applyTheme, getThemeById } from "@/lib/themes";
@@ -35,6 +36,7 @@ export default function AdminPanel() {
   const { data: settings } = useRestaurantSettings();
   const update = useUpdateSettings();
   const { logout } = useAdmin();
+  const demo = useDemoMode();
   const qc = useQueryClient();
 
   const [name, setName] = useState("");
@@ -149,6 +151,11 @@ export default function AdminPanel() {
   };
 
   const handleClearDemo = async () => {
+    if (demo) {
+      demo.clearMenuItems();
+      toast.success("All data cleared!");
+      return;
+    }
     if (!settings?.id) return;
     setClearing(true);
     try {
@@ -165,6 +172,23 @@ export default function AdminPanel() {
   };
 
   const handleSeedDemo = async () => {
+    if (demo) {
+      STARTER_ITEMS.forEach((item) => {
+        demo.createMenuItem({
+          name: item.name,
+          description: item.description ?? "",
+          price: item.price,
+          image_url: item.image_url ?? null,
+          category: item.category,
+          meal_period: item.meal_period,
+          is_available: true,
+          daily_stock: null,
+          restaurant_id: null,
+        });
+      });
+      toast.success("Demo items added!");
+      return;
+    }
     if (!settings?.id) return;
     try {
       const items = STARTER_ITEMS.map((item) => ({

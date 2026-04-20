@@ -6,10 +6,12 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { KeyRound } from "lucide-react";
+import { useDemoMode } from "@/contexts/DemoModeContext";
 
 type Props = { open: boolean; onClose: () => void };
 
 export default function ChangePasswordModal({ open, onClose }: Props) {
+  const demo = useDemoMode();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -36,6 +38,11 @@ export default function ChangePasswordModal({ open, onClose }: Props) {
     }
     if (next.length < 6) {
       toast.error("Password must be at least 6 characters");
+      return;
+    }
+    if (demo) {
+      toast.info("Password changes are not available in demo mode.");
+      handleClose();
       return;
     }
     setLoading(true);

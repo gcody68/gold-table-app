@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
 
-type AdminContextType = {
+export type AdminContextType = {
   isAdmin: boolean;
   session: Session | null;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -11,6 +11,30 @@ type AdminContextType = {
 };
 
 const AdminContext = createContext<AdminContextType | null>(null);
+
+// Allows the demo page to inject a fake admin context without touching AdminProvider
+const DemoAdminOverrideContext = createContext<AdminContextType | null>(null);
+
+export function DemoAdminProvider({
+  children,
+  onLogout,
+}: {
+  children: ReactNode;
+  onLogout: () => void;
+}) {
+  const value: AdminContextType = {
+    isAdmin: true,
+    session: null,
+    login: async () => ({ error: null }),
+    signUp: async () => ({ error: null }),
+    logout: onLogout,
+  };
+  return (
+    <DemoAdminOverrideContext.Provider value={value}>
+      {children}
+    </DemoAdminOverrideContext.Provider>
+  );
+}
 
 export function AdminProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -70,6 +94,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 }
 
 export function useAdmin() {
+  // Demo override takes precedence when present
+  const demoCtx = useContext(DemoAdminOverrideContext);
+  if (demoCtx) return demoCtx;
   const ctx = useContext(AdminContext);
   if (!ctx) throw new Error("useAdmin must be used within AdminProvider");
   return ctx;

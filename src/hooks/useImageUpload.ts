@@ -1,5 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
+let _isDemoMode = false;
+export function setImageUploadDemoMode(v: boolean) { _isDemoMode = v; }
+
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 const MAX_WIDTH = 1200;
 const JPEG_QUALITY = 0.8;
@@ -54,6 +57,11 @@ export async function uploadImage(file: File, folder: string = "menu"): Promise<
   }
 
   const compressed = await compressImage(file);
+
+  if (_isDemoMode) {
+    return URL.createObjectURL(compressed);
+  }
+
   const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
 
   const { error } = await supabase.storage

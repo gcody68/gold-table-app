@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoMode } from "@/contexts/DemoModeContext";
 
 export type ShiftConfig = {
   enabled: boolean;
@@ -57,9 +58,11 @@ export type RestaurantSettings = {
  *  - Pass no argument to load the authenticated user's own restaurant (admin view).
  */
 export function useRestaurantSettings(restaurantId?: string | null) {
+  const demo = useDemoMode();
   return useQuery({
     queryKey: ["restaurant-settings", restaurantId ?? "owner"],
     queryFn: async () => {
+      if (demo) return demo.getSettings();
       // Public view: load by explicit ID resolved from subdomain/domain
       if (restaurantId) {
         const { data, error } = await supabase
@@ -115,8 +118,10 @@ export function getBusinessDayWindow(businessHours: BusinessHours | null): { sta
 
 export function useUpdateSettings() {
   const qc = useQueryClient();
+  const demo = useDemoMode();
   return useMutation({
     mutationFn: async (updates: Partial<RestaurantSettings> & { id: string }) => {
+      if (demo) { demo.updateSettings(updates); return; }
       const { id, ...rest } = updates;
       const { error } = await supabase
         .from("restaurant_settings")

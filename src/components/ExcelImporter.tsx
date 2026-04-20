@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useDemoMode } from "@/contexts/DemoModeContext";
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -345,6 +346,7 @@ export default function ExcelImporter({ open, onClose }: Props) {
   const [cautionTarget, setCautionTarget] = useState<"file" | "mock" | null>(null);
   const [preview, setPreview] = useState<{ sheets: string[]; menuCount: number; galleryCount: number; hasInfo: boolean; hasLogo: boolean; hasHeader: boolean } | null>(null);
   const qc = useQueryClient();
+  const demo = useDemoMode();
 
   const triggerCaution = (target: "file" | "mock") => {
     setCautionTarget(target);
@@ -406,6 +408,16 @@ export default function ExcelImporter({ open, onClose }: Props) {
         return;
       }
 
+      if (demo) {
+        data.menuItems.forEach((item) => demo.createMenuItem({ ...item, is_available: true, daily_stock: null, restaurant_id: null }));
+        data.galleryItems.forEach((item) => demo.addGalleryItem(item));
+        if (data.restaurantInfo) demo.updateSettings(data.restaurantInfo);
+        const count = data.menuItems.length + data.galleryItems.length;
+        toast.success(`Success! ${count} ${count === 1 ? "record" : "records"} imported.`);
+        onClose();
+        return;
+      }
+
       const count = await importData(data, qc);
       const parts: string[] = [];
       if (data.menuItems.length) parts.push(`${data.menuItems.length} menu items`);
@@ -424,6 +436,15 @@ export default function ExcelImporter({ open, onClose }: Props) {
   const executeMockImport = async () => {
     setLoading(true);
     try {
+      if (demo) {
+        const mockData = { menuItems: MOCK_MENU_ITEMS, galleryItems: MOCK_GALLERY_ITEMS, restaurantInfo: MOCK_RESTAURANT_INFO };
+        mockData.menuItems.forEach((item) => demo.createMenuItem({ ...item, is_available: true, daily_stock: null, restaurant_id: null }));
+        mockData.galleryItems.forEach((item) => demo.addGalleryItem(item));
+        if (mockData.restaurantInfo) demo.updateSettings(mockData.restaurantInfo);
+        toast.success(`Mock data loaded`);
+        onClose();
+        return;
+      }
       const count = await runMockImport(qc);
       toast.success(`Mock data loaded — ${count} records imported`);
       onClose();

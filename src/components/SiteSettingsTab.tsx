@@ -3,10 +3,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Globe, Copy, CheckCheck, CircleAlert as AlertCircle, ExternalLink, Server } from "lucide-react";
+import { Globe, Copy, CheckCheck, CircleAlert as AlertCircle, ExternalLink, Server, Lock } from "lucide-react";
 import type { RestaurantSettings } from "@/hooks/useRestaurantSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useDemoMode } from "@/contexts/DemoModeContext";
 
 const SUBDOMAIN_HOST = "gildedtable.com";
 const VERCEL_IP = "76.76.21.21";
@@ -65,6 +66,27 @@ type Props = {
 
 export default function SiteSettingsTab({ settings }: Props) {
   const qc = useQueryClient();
+  const demo = useDemoMode();
+
+  if (demo) {
+    return (
+      <div className="space-y-6">
+        <div className="rounded-lg border border-border bg-secondary/40 p-4 flex items-start gap-3">
+          <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-foreground">Not Available in Demo</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Custom domain and subdomain configuration requires a live account. Start a free trial to publish your menu at your own URL.
+            </p>
+          </div>
+        </div>
+        <div className="text-center py-6 text-muted-foreground">
+          <Globe className="w-12 h-12 mx-auto mb-3 opacity-30" />
+          <p className="text-sm">Your live site URL will appear here once you create an account.</p>
+        </div>
+      </div>
+    );
+  }
   const [subdomain, setSubdomain] = useState(settings.subdomain ?? "");
   const [customDomain, setCustomDomain] = useState(settings.custom_domain ?? "");
   const [saving, setSaving] = useState(false);

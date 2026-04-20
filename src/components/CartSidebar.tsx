@@ -7,6 +7,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useRestaurantSettings } from "@/hooks/useRestaurantSettings";
 import { useDecrementStock } from "@/hooks/useMenuItems";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoMode } from "@/contexts/DemoModeContext";
 import { Minus, Plus, Trash2, ShoppingBag, Loader as Loader2, CircleCheck as CheckCircle2, CreditCard, Lock, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,6 +24,7 @@ export default function CartSidebar({ restaurantId }: { restaurantId?: string | 
   const [nameError, setNameError] = useState("");
   const [phoneError, setPhoneError] = useState("");
 
+  const demo = useDemoMode();
   const paymentEnabled = settings?.payment_enabled ?? false;
   const decrementStock = useDecrementStock();
 
@@ -79,6 +81,18 @@ export default function CartSidebar({ restaurantId }: { restaurantId?: string | 
   const submitOrder = async () => {
     setSubmitting(true);
     try {
+      if (demo) {
+        demo.submitOrder({
+          customerName: customerInfo.name.trim(),
+          customerPhone: customerInfo.phone.trim(),
+          items: items.map((i) => ({ name: i.menuItem.name, qty: i.quantity, price: Number(i.menuItem.price) })),
+          total,
+        });
+        setStep("confirmation");
+        clearCart();
+        return;
+      }
+
       const { data: order, error: orderErr } = await supabase
         .from("orders")
         .insert({

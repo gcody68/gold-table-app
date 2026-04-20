@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoMode } from "@/contexts/DemoModeContext";
 
 export type GalleryItem = {
   id: string;
@@ -11,9 +12,11 @@ export type GalleryItem = {
 };
 
 export function useGalleryItems(restaurantId?: string | null) {
+  const demo = useDemoMode();
   return useQuery({
     queryKey: ["gallery-items", restaurantId ?? "all"],
     queryFn: async () => {
+      if (demo) return demo.getGalleryItems();
       let query = supabase.from("gallery_items").select("*").order("sort_order");
       if (restaurantId) {
         query = query.eq("restaurant_id", restaurantId);
@@ -27,8 +30,10 @@ export function useGalleryItems(restaurantId?: string | null) {
 
 export function useAddGalleryItem() {
   const qc = useQueryClient();
+  const demo = useDemoMode();
   return useMutation({
     mutationFn: async (item: { image_url: string; caption?: string; restaurant_id?: string | null }) => {
+      if (demo) { demo.addGalleryItem(item); return; }
       let restaurant_id = item.restaurant_id ?? null;
       if (!restaurant_id) {
         const { data: { session } } = await supabase.auth.getSession();
@@ -51,8 +56,10 @@ export function useAddGalleryItem() {
 
 export function useDeleteGalleryItem() {
   const qc = useQueryClient();
+  const demo = useDemoMode();
   return useMutation({
     mutationFn: async (id: string) => {
+      if (demo) { demo.deleteGalleryItem(id); return; }
       const { error } = await supabase.from("gallery_items").delete().eq("id", id);
       if (error) throw error;
     },
