@@ -229,25 +229,14 @@ function Hero() {
           </div>
         </div>
 
-        {/* Phone mockup */}
+        {/* Hero image */}
         <div className="flex-shrink-0 flex items-center justify-center lg:justify-end">
-          <div className="relative" style={{ width: 280, height: 580 }}>
-            <div
-              className="absolute inset-0 rounded-[44px]"
-              style={{ background: "linear-gradient(145deg, #2a2a2a, #111)", boxShadow: "0 0 0 1px rgba(255,255,255,0.12), 0 40px 80px rgba(0,0,0,0.8), 0 0 60px rgba(201,168,76,0.12)" }}
-            />
-            <div className="absolute inset-[3px] rounded-[41px] overflow-hidden" style={{ background: "#000" }}>
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 rounded-b-2xl" style={{ width: 110, height: 28, background: "#111" }} />
-              <div className="absolute top-[28px] left-0 right-0 bottom-0 rounded-b-[38px] overflow-hidden">
-                <img src={heroPhoneImg} alt="Gilded Table Admin Dashboard" className="w-full h-full object-cover object-top" />
-              </div>
-            </div>
-            {/* Side buttons */}
-            <div className="absolute left-[-3px] top-[100px] w-[3px] rounded-l-full" style={{ height: 36, background: "rgba(255,255,255,0.15)" }} />
-            <div className="absolute left-[-3px] top-[150px] w-[3px] rounded-l-full" style={{ height: 36, background: "rgba(255,255,255,0.15)" }} />
-            <div className="absolute right-[-3px] top-[120px] w-[3px] rounded-r-full" style={{ height: 64, background: "rgba(255,255,255,0.15)" }} />
-            <div className="absolute inset-0 rounded-[44px] pointer-events-none" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 40%, transparent 60%, rgba(0,0,0,0.2) 100%)" }} />
-          </div>
+          <img
+            src={heroPhoneImg}
+            alt="Gilded Table Admin Dashboard"
+            className="rounded-2xl shadow-2xl max-w-full"
+            style={{ maxHeight: 580, boxShadow: "0 0 60px rgba(201,168,76,0.12), 0 40px 80px rgba(0,0,0,0.6)" }}
+          />
         </div>
       </div>
 
