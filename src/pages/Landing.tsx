@@ -333,6 +333,159 @@ function Features() {
   );
 }
 
+const ADMIN_FEATURES = [
+  { title: "Visual Style Themes", desc: "Choose from Midnight Gold, Ocean Breeze, Matcha Garden, and more. Your brand, your look." },
+  { title: "Menu Manager", desc: "Add, edit, and organize menu items in seconds. Import demo data or build from scratch." },
+  { title: "Background & Accent Control", desc: "Swap color palettes live. Customers see your changes the moment you save." },
+  { title: "Instant Preview", desc: "See exactly how your storefront looks before going live — no guessing required." },
+];
+
+function AdminSuite() {
+  return (
+    <section
+      className="py-20 px-4 md:px-8 lg:px-16"
+      style={{ background: "linear-gradient(180deg, #0a0d10 0%, #0d1010 100%)" }}
+    >
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        {/* Left: copy */}
+        <div>
+          <div
+            className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-6"
+            style={{ background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)" }}
+          >
+            <span className="text-sm font-medium" style={{ color: GOLD }}>Admin Suite</span>
+          </div>
+          <h2 className="text-3xl md:text-5xl font-bold text-white mb-5 leading-tight">
+            Design & Manage in{" "}
+            <span style={{ background: `linear-gradient(to right, ${GOLD}, #efb430)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+              Minutes
+            </span>
+          </h2>
+          <p className="text-lg mb-10 leading-relaxed" style={{ color: "#6b7280" }}>
+            Your business, your brand. Take full control of your digital presence with our intuitive admin suite. Update menus, change themes, and track orders without ever writing a line of code.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {ADMIN_FEATURES.map((f) => (
+              <div key={f.title} className="flex gap-3">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: "rgba(201,168,76,0.12)" }}>
+                  <Sparkles className="w-4 h-4" style={{ color: GOLD }} />
+                </div>
+                <div>
+                  <h4 className="text-white font-semibold text-sm mb-1">{f.title}</h4>
+                  <p className="text-xs leading-relaxed" style={{ color: "#6b7280" }}>{f.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right: browser/dashboard mockup */}
+        <div className="relative">
+          {/* Glow */}
+          <div className="absolute inset-0 rounded-3xl" style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(201,168,76,0.08) 0%, transparent 70%)", pointerEvents: "none" }} />
+
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl" style={{ border: "1px solid rgba(201,168,76,0.2)" }}>
+            {/* Browser chrome */}
+            <div className="flex items-center gap-3 px-4 py-3" style={{ background: "#0d1525" }}>
+              <div className="flex gap-1.5">
+                <div className="w-3 h-3 rounded-full" style={{ background: "#ff5f57" }} />
+                <div className="w-3 h-3 rounded-full" style={{ background: "#febc2e" }} />
+                <div className="w-3 h-3 rounded-full" style={{ background: "#28c840" }} />
+              </div>
+              <div className="flex-1 rounded-md px-3 py-1 text-xs text-center" style={{ background: "rgba(255,255,255,0.06)", color: "#6b7280" }}>
+                Admin Dashboard
+              </div>
+              <div className="flex gap-2">
+                {["Branding", "Payment"].map((t, i) => (
+                  <div key={t} className="px-3 py-1 rounded-md text-xs font-medium" style={{ background: i === 0 ? `rgba(201,168,76,0.15)` : "rgba(255,255,255,0.05)", color: i === 0 ? GOLD : "#6b7280" }}>
+                    {t}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Dashboard content */}
+            <div className="grid grid-cols-5" style={{ background: "#0a1020", minHeight: 380 }}>
+              {/* Left panel */}
+              <div className="col-span-3 p-5 space-y-4 border-r" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+                {[
+                  { label: "Business Name", value: "The Golden Fork" },
+                  { label: "Address", value: "123 Main St, Suite 4" },
+                  { label: "Phone", value: "(808) 555-0123" },
+                ].map((field) => (
+                  <div key={field.label}>
+                    <div className="text-xs mb-1.5" style={{ color: "#6b7280" }}>{field.label}</div>
+                    <div className="px-3 py-2 rounded-lg text-sm text-white" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(201,168,76,0.2)" }}>
+                      {field.value}
+                    </div>
+                  </div>
+                ))}
+                {/* Theme swatches */}
+                <div>
+                  <div className="text-xs mb-2" style={{ color: "#6b7280" }}>Visual Style</div>
+                  <div className="flex gap-2 flex-wrap">
+                    {[GOLD, "#3b82f6", "#22c55e", "#f97316", "#ec4899", "#8b5cf6"].map((c, i) => (
+                      <div key={c} className="w-7 h-7 rounded-full cursor-pointer transition-transform hover:scale-110" style={{ background: c, boxShadow: i === 0 ? `0 0 0 2px #0a1020, 0 0 0 4px ${GOLD}` : "none" }} />
+                    ))}
+                  </div>
+                </div>
+                {/* Background swatches */}
+                <div>
+                  <div className="text-xs mb-2" style={{ color: "#6b7280" }}>Background Style</div>
+                  <div className="flex gap-2">
+                    {["#000", "#1a1a2e", "#0d1b2a", "#1a1208", "#1a0a0a"].map((c, i) => (
+                      <div key={c} className="w-8 h-6 rounded-md cursor-pointer" style={{ background: c, boxShadow: i === 0 ? `0 0 0 2px #0a1020, 0 0 0 3px ${GOLD}` : "1px solid rgba(255,255,255,0.08)" }} />
+                    ))}
+                  </div>
+                </div>
+                {/* Buttons */}
+                <div className="flex gap-2 pt-1">
+                  <button className="flex-1 py-2 rounded-lg text-xs font-semibold transition-colors" style={{ border: `1px solid rgba(201,168,76,0.4)`, color: GOLD, background: "transparent" }}>Import Menu</button>
+                  <button className="flex-1 py-2 rounded-lg text-xs font-semibold" style={{ background: GOLD, color: "#111" }}>Load Demo Items</button>
+                </div>
+              </div>
+
+              {/* Right panel: menu categories */}
+              <div className="col-span-2 p-4 space-y-2">
+                {[
+                  { cat: "Drinks", admin: false },
+                  { cat: "Specials", admin: true },
+                  { cat: "Desserts", admin: true },
+                ].map(({ cat, admin }) => (
+                  <div key={cat} className="rounded-xl p-3" style={{ border: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)" }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-white text-xs font-semibold">{cat}</span>
+                      {admin && (
+                        <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "rgba(239,68,68,0.12)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)" }}>Admin only</span>
+                      )}
+                    </div>
+                    <button className="w-full py-3 rounded-lg flex items-center justify-center gap-2 text-xs" style={{ border: "1px dashed rgba(255,255,255,0.1)", color: "#6b7280" }}>
+                      <span className="text-base leading-none">+</span> Add {cat} Item
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Tab bar */}
+            <div className="flex" style={{ background: "#0d1525", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+              {["Mains", "Sides", "Drinks", "Specials", "Desserts"].map((t, i) => (
+                <div
+                  key={t}
+                  className="flex-1 py-3 text-center text-xs font-medium"
+                  style={{ color: i === 0 ? GOLD : "#4b5563", borderBottom: i === 0 ? `2px solid ${GOLD}` : "2px solid transparent" }}
+                >
+                  {t}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function DemoSection() {
   return (
     <section id="demo" className="py-20 px-4 md:px-8 lg:px-16" style={{ background: "linear-gradient(160deg, #1a1208 0%, #0a0d10 45%, #0d1010 100%)" }}>
@@ -612,6 +765,7 @@ function LandingInner() {
       <Navbar />
       <Hero />
       <Features />
+      <AdminSuite />
       <DemoSection />
       <Pricing />
       <CTASection />
