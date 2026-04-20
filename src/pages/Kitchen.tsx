@@ -30,12 +30,49 @@ type OrderWithItems = {
 
 const DEMO_ORDERS_KEY = "gilded_demo_orders";
 
+const SEED_ORDERS: DemoOrder[] = [
+  {
+    id: "SEED-042",
+    customerName: "James Holloway",
+    customerPhone: "(808) 555-0142",
+    items: [
+      { name: "Wagyu Burger", qty: 1, price: 28 },
+      { name: "Garlic Fries", qty: 1, price: 9 },
+      { name: "Iced Latte", qty: 2, price: 6 },
+    ],
+    total: 49,
+    status: "new",
+    time: "2 min ago",
+    createdAt: Date.now() - 2 * 60 * 1000,
+  },
+  {
+    id: "SEED-041",
+    customerName: "Sofia Reyes",
+    customerPhone: "(808) 555-0198",
+    items: [
+      { name: "Grilled Salmon", qty: 1, price: 34 },
+      { name: "Caesar Salad", qty: 1, price: 14 },
+    ],
+    total: 48,
+    status: "in-progress",
+    time: "7 min ago",
+    createdAt: Date.now() - 7 * 60 * 1000,
+  },
+];
+
 function readOrdersFromStorage(): DemoOrder[] {
   try {
     const raw = localStorage.getItem(DEMO_ORDERS_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const stored = JSON.parse(raw) as DemoOrder[];
+      // Keep seed order status changes; prepend real orders placed this session
+      const realOrders = stored.filter((o) => !o.id.startsWith("SEED-"));
+      const seedStatuses = Object.fromEntries(stored.filter((o) => o.id.startsWith("SEED-")).map((o) => [o.id, o.status]));
+      const seeds = SEED_ORDERS.map((s) => seedStatuses[s.id] ? { ...s, status: seedStatuses[s.id] as DemoOrder["status"] } : s);
+      return [...realOrders, ...seeds];
+    }
   } catch {}
-  return [];
+  return [...SEED_ORDERS];
 }
 
 type DemoOrder = import("@/contexts/DemoContext").DemoOrder;
@@ -85,13 +122,16 @@ function DemoKitchenBoard() {
       </header>
 
       <KitchenAnalyticsBar businessHours={null} demoOrders={orders} />
+      <div className="bg-amber-950/30 border-b border-amber-800/20 px-4 py-1.5 text-center">
+        <p className="text-xs text-amber-400/60">Demo — stats reflect sample orders only. Live sales analytics available after sign-up.</p>
+      </div>
 
       <div className="container py-6">
         {pending.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3">
             <ChefHat className="w-16 h-16 opacity-20" />
-            <p className="text-lg">No pending orders</p>
-            <p className="text-sm">Place an order on the demo menu to see it appear here</p>
+            <p className="text-lg">All orders fulfilled</p>
+            <p className="text-sm">New orders from the demo menu appear here in real time</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
