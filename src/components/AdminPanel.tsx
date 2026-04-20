@@ -149,8 +149,10 @@ export default function AdminPanel() {
     setClearing(true);
     try {
       await supabase.from("menu_items").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabase.from("gallery_items").delete().neq("id", "00000000-0000-0000-0000-000000000000");
       qc.invalidateQueries({ queryKey: ["menu-items"] });
-      toast.success("Demo data cleared! Start adding your own items.");
+      qc.invalidateQueries({ queryKey: ["gallery-items"] });
+      toast.success("All data cleared!");
     } catch {
       toast.error("Failed to clear data");
     } finally {
