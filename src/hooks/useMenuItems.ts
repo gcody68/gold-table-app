@@ -82,8 +82,18 @@ export function useCreateMenuItem() {
       is_available?: boolean;
       daily_stock?: number | null;
     }) => {
+      let restaurant_id = item.restaurant_id ?? null;
+      if (!restaurant_id) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const isSuperAdmin = session?.user?.app_metadata?.super_admin === true;
+        let q = supabase.from("restaurant_settings").select("id");
+        if (session?.user?.id && !isSuperAdmin) q = q.eq("owner_id", session.user.id);
+        const { data: rs } = await q.limit(1).maybeSingle();
+        restaurant_id = rs?.id ?? null;
+      }
       const { error } = await supabase.from("menu_items").insert({
         ...item,
+        restaurant_id,
         meal_period: item.meal_period ?? "all-day",
         is_available: item.is_available ?? true,
         daily_stock: item.daily_stock ?? null,

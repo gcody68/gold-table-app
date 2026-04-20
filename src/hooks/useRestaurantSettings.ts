@@ -45,8 +45,9 @@ export function useRestaurantSettings() {
     queryKey: ["restaurant-settings"],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      const isSuperAdmin = session?.user?.app_metadata?.super_admin === true;
       let query = supabase.from("restaurant_settings").select("*");
-      if (session?.user?.id) {
+      if (session?.user?.id && !isSuperAdmin) {
         query = query.eq("owner_id", session.user.id);
       }
       const { data, error } = await query.limit(1).maybeSingle();
