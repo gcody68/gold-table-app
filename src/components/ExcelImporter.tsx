@@ -280,17 +280,21 @@ function generateTemplate(): ArrayBuffer {
 async function importData(data: ParsedData, qc: ReturnType<typeof useQueryClient>) {
   let totalImported = 0;
 
-  if (data.menuItems.length > 0) {
-    const { data: settings, error: settingsError } = await supabase
-      .from("restaurant_settings")
-      .select("id")
-      .limit(1)
-      .maybeSingle();
-    if (settingsError) throw new Error(`Could not load restaurant settings: ${settingsError.message}`);
+  // Always scope to the current user's own restaurant
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("You must be logged in to import data.");
 
+  const isSuperAdmin = session.user.app_metadata?.super_admin === true;
+  let settingsQuery = supabase.from("restaurant_settings").select("id");
+  if (!isSuperAdmin) settingsQuery = settingsQuery.eq("owner_id", session.user.id);
+  const { data: ownSettings, error: settingsError } = await settingsQuery.limit(1).maybeSingle();
+  if (settingsError) throw new Error(`Could not load restaurant settings: ${settingsError.message}`);
+  const restaurantId = ownSettings?.id ?? null;
+
+  if (data.menuItems.length > 0) {
     const items = data.menuItems.map((item, i) => ({
       ...item,
-      restaurant_id: settings?.id ?? null,
+      restaurant_id: restaurantId,
       sort_order: 1000 + i,
       is_placeholder: false,
     }));
@@ -301,7 +305,7 @@ async function importData(data: ParsedData, qc: ReturnType<typeof useQueryClient
   }
 
   if (data.galleryItems.length > 0) {
-    const galleryRows = data.galleryItems.map((g, i) => ({ ...g, sort_order: 1000 + i }));
+    const galleryRows = data.galleryItems.map((g, i) => ({ ...g, restaurant_id: restaurantId, sort_order: 1000 + i }));
     const { error } = await supabase.from("gallery_items").insert(galleryRows);
     if (error) throw new Error(`Gallery import failed: ${error.message}`);
     totalImported += galleryRows.length;
@@ -309,7 +313,7 @@ async function importData(data: ParsedData, qc: ReturnType<typeof useQueryClient
   }
 
   if (data.restaurantInfo) {
-    const { data: settings } = await supabase.from("restaurant_settings").select("id").limit(1).maybeSingle();
+    const settings = ownSettings;
     if (settings) {
       const updates: Record<string, string> = {};
       if (data.restaurantInfo.business_name) updates.business_name = data.restaurantInfo.business_name;
