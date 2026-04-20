@@ -33,7 +33,7 @@ type OrderWithItems = {
 // Demo kitchen board — reads orders from DemoContext, no auth required
 // ---------------------------------------------------------------------------
 function DemoKitchenBoard() {
-  const { demoOrders, updateDemoOrderStatus, settings } = useDemo();
+  const { demoOrders, updateDemoOrderStatus } = useDemo();
 
   const pending = demoOrders.filter((o) => o.status === "new" || o.status === "in-progress");
 
@@ -54,6 +54,8 @@ function DemoKitchenBoard() {
           </div>
         </div>
       </header>
+
+      <KitchenAnalyticsBar businessHours={null} demoOrders={demoOrders} />
 
       <div className="container py-6">
         {pending.length === 0 ? (

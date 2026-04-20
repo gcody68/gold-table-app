@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getBusinessDayWindow, type BusinessHours } from "@/hooks/useRestaurantSettings";
 import { Eye, EyeOff, TrendingUp, ShoppingBag, Star, Receipt } from "lucide-react";
+import type { DemoOrder } from "@/contexts/DemoContext";
 
 type DailyStats = {
   grossSales: number;
@@ -47,16 +48,42 @@ async function fetchDailyStats(businessHours: BusinessHours | null): Promise<Dai
   return { grossSales, orderCount, avgTicket, topItem };
 }
 
+function computeDemoStats(orders: DemoOrder[]): DailyStats {
+  const active = orders.filter((o) => o.status !== "completed");
+  const grossSales = active.reduce((sum, o) => sum + o.total, 0);
+  const orderCount = active.length;
+  const avgTicket = orderCount > 0 ? grossSales / orderCount : 0;
+
+  const counts: Record<string, number> = {};
+  active.forEach((o) => o.items.forEach((i) => {
+    counts[i.name] = (counts[i.name] || 0) + i.qty;
+  }));
+  const topItem = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+
+  return { grossSales, orderCount, avgTicket, topItem };
+}
+
 type Props = {
   businessHours: BusinessHours | null;
+  demoOrders?: DemoOrder[];
 };
 
-export default function KitchenAnalyticsBar({ businessHours }: Props) {
-  const [stats, setStats] = useState<DailyStats>({ grossSales: 0, orderCount: 0, avgTicket: 0, topItem: null });
+export default function KitchenAnalyticsBar({ businessHours, demoOrders }: Props) {
+  const isDemo = demoOrders !== undefined;
+
+  const [stats, setStats] = useState<DailyStats>(() =>
+    isDemo ? computeDemoStats(demoOrders!) : { grossSales: 0, orderCount: 0, avgTicket: 0, topItem: null }
+  );
   const [hidden, setHidden] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isDemo);
+
+  // Demo mode: recompute from prop changes
+  useEffect(() => {
+    if (isDemo) setStats(computeDemoStats(demoOrders!));
+  }, [isDemo, demoOrders]);
 
   const refresh = useCallback(async () => {
+    if (isDemo) return;
     try {
       const data = await fetchDailyStats(businessHours);
       setStats(data);
@@ -65,9 +92,10 @@ export default function KitchenAnalyticsBar({ businessHours }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [businessHours]);
+  }, [isDemo, businessHours]);
 
   useEffect(() => {
+    if (isDemo) return;
     refresh();
 
     const channel = supabase
@@ -85,7 +113,7 @@ export default function KitchenAnalyticsBar({ businessHours }: Props) {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [refresh]);
+  }, [isDemo, refresh]);
 
   const fmt = (val: number) =>
     hidden ? "••••" : `$${val.toFixed(2)}`;
