@@ -18,10 +18,14 @@ const queryClient = new QueryClient();
 function RootRoute() {
   const { resolution } = useRestaurant();
   const [session, setSession] = useState<Session | null | undefined>(undefined);
+  const [wasLoggedIn, setWasLoggedIn] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, s) => setSession(s));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
+      if (s) setWasLoggedIn(true);
+      setSession(s);
+    });
     return () => subscription.unsubscribe();
   }, []);
 
@@ -35,6 +39,9 @@ function RootRoute() {
 
   // Bare domain with logged-in user → show their restaurant dashboard
   if (resolution.status === "root" && session) return <Index />;
+
+  // Bare domain after logout → show customer view, not the marketing landing page
+  if (resolution.status === "root" && wasLoggedIn) return <Index />;
 
   // Bare domain / Vercel URL with no subdomain → show landing page
   if (resolution.status === "root") return <Landing />;
