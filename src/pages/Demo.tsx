@@ -16,11 +16,110 @@ import CartSidebar from "@/components/CartSidebar";
 import CartFAB from "@/components/CartFAB";
 import GallerySection from "@/components/GallerySection";
 import FloatingNavSelector from "@/components/FloatingNavSelector";
-import { RotateCcw, X, Shield } from "lucide-react";
+import { RotateCcw, X, Shield, Lock, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { GalleryItem } from "@/hooks/useGallery";
 import type { RestaurantSettings } from "@/hooks/useRestaurantSettings";
 import type { MenuItem } from "@/hooks/useMenuItems";
+
+// ---------------------------------------------------------------------------
+// Real Supabase signup modal — bypasses DemoAdminProvider intentionally
+// ---------------------------------------------------------------------------
+function SignUpModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [mode, setMode] = useState<"signup" | "login">("signup");
+  const [restaurantName, setRestaurantName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const normalizeEmail = (v: string) => v.includes("@") ? v.trim() : `${v.trim()}@admin.local`;
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!restaurantName.trim() || !email.trim() || !password.trim()) return;
+    setLoading(true);
+    const norm = normalizeEmail(email);
+    const { error: authErr } = await supabase.auth.signUp({ email: norm, password });
+    if (authErr) { toast.error(authErr.message); setLoading(false); return; }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await supabase.from("restaurant_settings").insert({ owner_id: session.user.id, business_name: restaurantName.trim() });
+    }
+    setLoading(false);
+    toast.success("Account created! You're all set.");
+    onClose();
+    window.location.href = "/";
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password.trim()) return;
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email: normalizeEmail(email), password });
+    setLoading(false);
+    if (error) { toast.error("Invalid username or password"); return; }
+    toast.success("Welcome back!");
+    onClose();
+    window.location.href = "/";
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="bg-card border-border max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-gold flex items-center gap-2">
+            <Lock className="w-5 h-5" />
+            {mode === "signup" ? "Start Your Free Trial" : "Sign In to Your Account"}
+          </DialogTitle>
+        </DialogHeader>
+        {mode === "signup" ? (
+          <form onSubmit={handleSignUp} className="space-y-4">
+            <div className="space-y-1">
+              <Label className="text-muted-foreground text-xs">Restaurant Name</Label>
+              <Input value={restaurantName} onChange={(e) => setRestaurantName(e.target.value)} className="bg-secondary border-border" autoFocus />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-muted-foreground text-xs">Username or Email</Label>
+              <Input value={email} onChange={(e) => setEmail(e.target.value)} className="bg-secondary border-border" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-muted-foreground text-xs">Password</Label>
+              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-secondary border-border" />
+            </div>
+            <Button type="submit" disabled={loading} className="w-full gradient-gold text-primary-foreground font-semibold">
+              {loading ? "Creating account..." : "Create Free Account"}
+            </Button>
+            <button type="button" onClick={() => setMode("login")} className="w-full text-center text-xs text-muted-foreground hover:text-gold transition-colors flex items-center justify-center gap-1">
+              Already have an account? Sign in <ChevronRight className="w-3 h-3" />
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-1">
+              <Label className="text-muted-foreground text-xs">Username or Email</Label>
+              <Input value={email} onChange={(e) => setEmail(e.target.value)} className="bg-secondary border-border" autoFocus />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-muted-foreground text-xs">Password</Label>
+              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-secondary border-border" />
+            </div>
+            <Button type="submit" disabled={loading} className="w-full gradient-gold text-primary-foreground font-semibold">
+              {loading ? "Signing in..." : "Sign In"}
+            </Button>
+            <button type="button" onClick={() => setMode("signup")} className="w-full text-center text-xs text-muted-foreground hover:text-gold transition-colors flex items-center justify-center gap-1">
+              New restaurant? Create your account <ChevronRight className="w-3 h-3" />
+            </button>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function DemoContent() {
   const {
@@ -38,6 +137,7 @@ function DemoContent() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
+  const [signUpOpen, setSignUpOpen] = useState(false);
 
   // Enable in-memory image uploads
   useEffect(() => {
@@ -171,9 +271,9 @@ function DemoContent() {
                   <Shield className="w-3 h-3 inline" /> shield icon
                 </span>{" "}
                 in the top-right (username: <span className="font-semibold text-gold">test</span>, password: <span className="font-semibold text-gold">test</span>).{" "}
-                <Link to="/" className="text-gold font-semibold underline underline-offset-2 hover:text-gold/80 transition-colors">
+                <button onClick={() => setSignUpOpen(true)} className="text-gold font-semibold underline underline-offset-2 hover:text-gold/80 transition-colors">
                   Start Free Trial
-                </Link>
+                </button>
               </p>
               <div className="flex items-center gap-3 flex-shrink-0">
                 <button
@@ -204,6 +304,8 @@ function DemoContent() {
                 &copy; {new Date().getFullYear()} · Powered by love for great food
               </p>
             </footer>
+
+            <SignUpModal open={signUpOpen} onClose={() => setSignUpOpen(false)} />
           </div>
         </DemoAdminProvider>
       </DemoModeProvider>

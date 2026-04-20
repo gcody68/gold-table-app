@@ -1,6 +1,5 @@
 import { useDemo, type DemoStep } from "@/contexts/DemoContext";
 import { CircleCheck as CheckCircle2, Circle, Paintbrush, UtensilsCrossed, ShoppingBag, ChevronRight } from "lucide-react";
-import { Link } from "react-router-dom";
 
 type Step = {
   id: DemoStep;
@@ -38,7 +37,7 @@ const STEPS: Step[] = [
   },
 ];
 
-export default function GuidePanel() {
+export default function GuidePanel({ onSignUp }: { onSignUp?: () => void }) {
   const { completedSteps } = useDemo();
   const allDone = STEPS.every((s) => completedSteps.has(s.id));
 
@@ -105,11 +104,12 @@ export default function GuidePanel() {
           <div className="text-2xl">🎉</div>
           <p className="text-sm font-semibold text-gold">Tour Complete!</p>
           <p className="text-xs text-muted-foreground">You've seen what Gilded Table can do. Ready to go live?</p>
-          <Link to="/">
-            <button className="w-full gradient-gold text-primary-foreground text-sm font-semibold py-2.5 rounded-lg hover:opacity-90 transition-opacity">
-              Start Free Trial
-            </button>
-          </Link>
+          <button
+            onClick={onSignUp}
+            className="w-full gradient-gold text-primary-foreground text-sm font-semibold py-2.5 rounded-lg hover:opacity-90 transition-opacity"
+          >
+            Start Free Trial
+          </button>
         </div>
       )}
 
