@@ -19,6 +19,16 @@ export const DEFAULT_SERVICE_HOURS: ServiceHours = {
   dinner: { enabled: true, start: "16:00", end: "23:00" },
 };
 
+export type BusinessHours = {
+  open: string;  // HH:MM
+  close: string; // HH:MM
+};
+
+export const DEFAULT_BUSINESS_HOURS: BusinessHours = {
+  open: "06:00",
+  close: "23:00",
+};
+
 export type RestaurantSettings = {
   id: string;
   owner_id: string | null;
@@ -35,6 +45,7 @@ export type RestaurantSettings = {
   kitchen_view_enabled: boolean | null;
   show_gallery: boolean | null;
   service_hours: ServiceHours | null;
+  business_hours: BusinessHours | null;
   unavailable_display: "hide" | "gray" | null;
   subdomain: string | null;
   custom_domain: string | null;
@@ -55,6 +66,34 @@ export function useRestaurantSettings() {
       return data as RestaurantSettings | null;
     },
   });
+}
+
+/**
+ * Returns the [start, end) ISO timestamps for the current business day window.
+ *
+ * Logic:
+ *  - The "business day" starts at `open` time and runs until `open` time the NEXT calendar day.
+ *  - If the current time is BEFORE today's open time, we're still in yesterday's business day,
+ *    so the window started at yesterday's open time.
+ *  - Example: open=06:00, close=23:00, now=04:00 → window is yesterday 06:00 → today 06:00.
+ *  - The `close` value is informational but the hard reset boundary is always the next open time.
+ */
+export function getBusinessDayWindow(businessHours: BusinessHours | null): { start: Date; end: Date } {
+  const bh = businessHours ?? DEFAULT_BUSINESS_HOURS;
+  const [openH, openM] = bh.open.split(":").map(Number);
+
+  const now = new Date();
+  const todayOpen = new Date(now);
+  todayOpen.setHours(openH, openM, 0, 0);
+
+  // If we haven't hit today's opening yet, the current business day started yesterday
+  const dayStart = now < todayOpen
+    ? new Date(todayOpen.getTime() - 86400000)
+    : todayOpen;
+
+  const dayEnd = new Date(dayStart.getTime() + 86400000);
+
+  return { start: dayStart, end: dayEnd };
 }
 
 export function useUpdateSettings() {

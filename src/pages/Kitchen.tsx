@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminProvider, useAdmin } from "@/contexts/AdminContext";
 import AdminLoginModal from "@/components/AdminLoginModal";
 import KitchenAnalyticsBar from "@/components/KitchenAnalyticsBar";
+import { useRestaurantSettings, getBusinessDayWindow } from "@/hooks/useRestaurantSettings";
 import { Check, Clock, Phone, User, ChefHat, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -31,14 +32,18 @@ function KitchenBoard() {
   const { isAdmin } = useAdmin();
   const [loginOpen, setLoginOpen] = useState(!isAdmin);
   const qc = useQueryClient();
+  const { data: settings } = useRestaurantSettings();
+  const businessHours = settings?.business_hours ?? null;
 
   const { data: orders, isLoading } = useQuery({
-    queryKey: ["kitchen-orders"],
+    queryKey: ["kitchen-orders", businessHours],
     queryFn: async () => {
+      const { start } = getBusinessDayWindow(businessHours);
       const { data, error } = await supabase
         .from("orders")
         .select("*, order_items(*)")
         .eq("status", "pending")
+        .gte("created_at", start.toISOString())
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data as OrderWithItems[];
@@ -94,7 +99,7 @@ function KitchenBoard() {
         </div>
       </header>
 
-      <KitchenAnalyticsBar />
+      <KitchenAnalyticsBar businessHours={businessHours} />
 
       <div className="container py-6">
         {isLoading ? (

@@ -1,8 +1,8 @@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { type ServiceHours, type ShiftConfig } from "@/hooks/useRestaurantSettings";
-import { Clock } from "lucide-react";
+import { type ServiceHours, type ShiftConfig, type BusinessHours } from "@/hooks/useRestaurantSettings";
+import { Clock, Store } from "lucide-react";
 
 type MealKey = keyof ServiceHours;
 
@@ -15,6 +15,8 @@ const SHIFTS: { key: MealKey; label: string; description: string }[] = [
 type Props = {
   serviceHours: ServiceHours;
   onChange: (hours: ServiceHours) => void;
+  businessHours: BusinessHours;
+  onBusinessHoursChange: (hours: BusinessHours) => void;
   unavailableDisplay: "hide" | "gray";
   onDisplayChange: (val: "hide" | "gray") => void;
 };
@@ -22,6 +24,8 @@ type Props = {
 export default function ServiceHoursTab({
   serviceHours,
   onChange,
+  businessHours,
+  onBusinessHoursChange,
   unavailableDisplay,
   onDisplayChange,
 }: Props) {
@@ -31,7 +35,50 @@ export default function ServiceHoursTab({
 
   return (
     <div className="space-y-6">
+
+      {/* ── Business Hours ── */}
       <div>
+        <div className="flex items-center gap-2 mb-1">
+          <Store className="w-4 h-4 text-gold" />
+          <p className="text-sm font-semibold text-foreground">Business Hours</p>
+        </div>
+        <p className="text-xs text-muted-foreground mb-4">
+          Your overall operating window. The Kitchen view shows orders from today's opening time and resets when the next business day begins.
+        </p>
+
+        <div className="rounded-lg border border-gold/30 bg-gold/5 p-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-muted-foreground text-xs flex items-center gap-1">
+                <Clock className="w-3 h-3" /> Opens
+              </Label>
+              <Input
+                type="time"
+                value={businessHours.open}
+                onChange={(e) => onBusinessHoursChange({ ...businessHours, open: e.target.value })}
+                className="bg-secondary border-border text-sm"
+              />
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-xs flex items-center gap-1">
+                <Clock className="w-3 h-3" /> Closes
+              </Label>
+              <Input
+                type="time"
+                value={businessHours.close}
+                onChange={(e) => onBusinessHoursChange({ ...businessHours, close: e.target.value })}
+                className="bg-secondary border-border text-sm"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
+            Kitchen totals reset daily at your opening time. Orders before that time count toward the previous business day.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Shift Hours ── */}
+      <div className="border-t border-border pt-5">
         <p className="text-sm font-semibold text-foreground mb-1">Shift Hours</p>
         <p className="text-xs text-muted-foreground mb-4">
           Define when each meal period is active. Items tagged for a period only appear (or become orderable) during its window.
@@ -88,6 +135,7 @@ export default function ServiceHoursTab({
         </div>
       </div>
 
+      {/* ── Out-of-Hours Display ── */}
       <div className="border-t border-border pt-5">
         <p className="text-sm font-semibold text-foreground mb-1">Out-of-Hours Display</p>
         <p className="text-xs text-muted-foreground mb-3">

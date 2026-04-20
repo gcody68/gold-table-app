@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getBusinessDayWindow, type BusinessHours } from "@/hooks/useRestaurantSettings";
 import { Eye, EyeOff, TrendingUp, ShoppingBag, Star, Receipt } from "lucide-react";
 
 type DailyStats = {
@@ -9,14 +10,14 @@ type DailyStats = {
   topItem: string | null;
 };
 
-async function fetchDailyStats(): Promise<DailyStats> {
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+async function fetchDailyStats(businessHours: BusinessHours | null): Promise<DailyStats> {
+  const { start, end } = getBusinessDayWindow(businessHours);
 
   const { data: ordersData, error: ordersError } = await supabase
     .from("orders")
     .select("id, total")
-    .gte("created_at", todayStart.toISOString());
+    .gte("created_at", start.toISOString())
+    .lt("created_at", end.toISOString());
 
   if (ordersError) throw ordersError;
 
@@ -46,21 +47,25 @@ async function fetchDailyStats(): Promise<DailyStats> {
   return { grossSales, orderCount, avgTicket, topItem };
 }
 
-export default function KitchenAnalyticsBar() {
+type Props = {
+  businessHours: BusinessHours | null;
+};
+
+export default function KitchenAnalyticsBar({ businessHours }: Props) {
   const [stats, setStats] = useState<DailyStats>({ grossSales: 0, orderCount: 0, avgTicket: 0, topItem: null });
   const [hidden, setHidden] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     try {
-      const data = await fetchDailyStats();
+      const data = await fetchDailyStats(businessHours);
       setStats(data);
     } catch {
       // silent fail — stats are non-critical
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [businessHours]);
 
   useEffect(() => {
     refresh();

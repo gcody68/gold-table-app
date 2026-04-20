@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useRestaurantSettings, useUpdateSettings, DEFAULT_SERVICE_HOURS, type ServiceHours } from "@/hooks/useRestaurantSettings";
+import { useRestaurantSettings, useUpdateSettings, DEFAULT_SERVICE_HOURS, DEFAULT_BUSINESS_HOURS, type ServiceHours, type BusinessHours } from "@/hooks/useRestaurantSettings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,6 +59,7 @@ export default function AdminPanel() {
   const [kitchenViewEnabled, setKitchenViewEnabled] = useState(true);
   const [showGallery, setShowGallery] = useState(false);
   const [serviceHours, setServiceHours] = useState<ServiceHours>(DEFAULT_SERVICE_HOURS);
+  const [businessHours, setBusinessHours] = useState<BusinessHours>(DEFAULT_BUSINESS_HOURS);
   const [unavailableDisplay, setUnavailableDisplay] = useState<"hide" | "gray">("hide");
 
   if (settings && !initialized) {
@@ -75,6 +76,7 @@ export default function AdminPanel() {
     setKitchenViewEnabled(settings.kitchen_view_enabled ?? true);
     setShowGallery(settings.show_gallery ?? false);
     setServiceHours(settings.service_hours ?? DEFAULT_SERVICE_HOURS);
+    setBusinessHours(settings.business_hours ?? DEFAULT_BUSINESS_HOURS);
     setUnavailableDisplay(settings.unavailable_display === "gray" ? "gray" : "hide");
     setInitialized(true);
   }
@@ -137,6 +139,7 @@ export default function AdminPanel() {
         kitchen_view_enabled: kitchenViewEnabled,
         show_gallery: showGallery,
         service_hours: serviceHours,
+        business_hours: businessHours,
         unavailable_display: unavailableDisplay,
       });
       toast.success("Settings saved!");
@@ -344,6 +347,8 @@ export default function AdminPanel() {
             <ServiceHoursTab
               serviceHours={serviceHours}
               onChange={setServiceHours}
+              businessHours={businessHours}
+              onBusinessHoursChange={setBusinessHours}
               unavailableDisplay={unavailableDisplay}
               onDisplayChange={setUnavailableDisplay}
             />
