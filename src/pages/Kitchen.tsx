@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminProvider, useAdmin } from "@/contexts/AdminContext";
+import { DemoProvider, useDemo } from "@/contexts/DemoContext";
 import AdminLoginModal from "@/components/AdminLoginModal";
 import KitchenAnalyticsBar from "@/components/KitchenAnalyticsBar";
 import { useRestaurantSettings, getBusinessDayWindow } from "@/hooks/useRestaurantSettings";
@@ -28,6 +29,96 @@ type OrderWithItems = {
   order_items: OrderItem[];
 };
 
+// ---------------------------------------------------------------------------
+// Demo kitchen board — reads orders from DemoContext, no auth required
+// ---------------------------------------------------------------------------
+function DemoKitchenBoard() {
+  const { demoOrders, updateDemoOrderStatus, settings } = useDemo();
+
+  const pending = demoOrders.filter((o) => o.status === "new" || o.status === "in-progress");
+
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+        <div className="container flex items-center justify-between h-14">
+          <div className="flex items-center gap-2">
+            <ChefHat className="w-5 h-5 text-gold" />
+            <span className="font-serif text-lg font-semibold text-gold">Kitchen Display</span>
+            <span className="text-xs text-amber-300/80 bg-amber-950/60 border border-amber-700/40 px-2 py-0.5 rounded-full font-medium ml-1">
+              Demo
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground">{pending.length} pending</span>
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          </div>
+        </div>
+      </header>
+
+      <div className="container py-6">
+        {pending.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3">
+            <ChefHat className="w-16 h-16 opacity-20" />
+            <p className="text-lg">No pending orders</p>
+            <p className="text-sm">Place an order on the demo menu to see it appear here</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {pending.map((order) => (
+              <div key={order.id} className="bg-card border border-border rounded-lg overflow-hidden animate-fade-in">
+                <div className="bg-secondary px-4 py-3 border-b border-border">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true })}
+                      </span>
+                    </div>
+                    <span className="text-gold font-bold text-sm">${Number(order.total).toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <User className="w-4 h-4 text-gold flex-shrink-0" />
+                    <span className="font-bold text-foreground text-base leading-tight">{order.customerName}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-gold flex-shrink-0" />
+                    <span className="font-bold text-foreground text-base tracking-wide">{order.customerPhone}</span>
+                  </div>
+                </div>
+
+                <div className="p-4 space-y-3">
+                  {order.items.map((item, i) => (
+                    <div key={i} className="flex justify-between items-baseline">
+                      <span className="text-foreground font-semibold text-sm">
+                        <span className="text-gold font-bold text-base mr-1.5">{item.qty}×</span>
+                        {item.name}
+                      </span>
+                      <span className="text-muted-foreground text-xs">${(item.price * item.qty).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="px-4 pb-4 pt-1 border-t border-border">
+                  <Button
+                    onClick={() => { updateDemoOrderStatus(order.id, "completed"); toast.success("Order marked as ready!"); }}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold text-sm h-10"
+                  >
+                    <Check className="w-4 h-4 mr-2" />
+                    Mark as Ready
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Real kitchen board — requires Supabase auth
+// ---------------------------------------------------------------------------
 function KitchenBoard() {
   const { isAdmin } = useAdmin();
   const [loginOpen, setLoginOpen] = useState(!isAdmin);
@@ -182,6 +273,16 @@ function KitchenBoard() {
 }
 
 export default function KitchenPage() {
+  const isDemo = new URLSearchParams(window.location.search).get("demo") === "1";
+
+  if (isDemo) {
+    return (
+      <DemoProvider>
+        <DemoKitchenBoard />
+      </DemoProvider>
+    );
+  }
+
   return (
     <AdminProvider>
       <KitchenBoard />

@@ -444,14 +444,14 @@ export default function AdminPanel() {
                 </p>
                 <div className="flex items-center gap-2 bg-secondary rounded-md px-3 py-2">
                   <span className="text-xs font-mono text-gold flex-1 truncate">
-                    {window.location.origin}/kitchen
+                    {window.location.origin}/kitchen{demo ? "?demo=1" : ""}
                   </span>
                   <Button
                     size="sm"
                     variant="ghost"
                     className="text-xs h-7"
                     onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/kitchen`);
+                      navigator.clipboard.writeText(`${window.location.origin}/kitchen${demo ? "?demo=1" : ""}`);
                       toast.success("Link copied!");
                     }}
                   >
