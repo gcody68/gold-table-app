@@ -57,12 +57,25 @@ export function getMealPeriodStartTime(period: MealPeriod): string {
 export function useMenuItems(restaurantId?: string | null) {
   const demo = useDemoMode();
   return useQuery({
-    queryKey: ["menu-items", restaurantId ?? "all"],
+    queryKey: ["menu-items", restaurantId ?? "owner"],
     queryFn: async () => {
       if (demo) return demo.getMenuItems();
       let query = supabase.from("menu_items").select("*").order("sort_order");
       if (restaurantId) {
         query = query.eq("restaurant_id", restaurantId);
+      } else {
+        // No explicit restaurant — scope to the authenticated owner's restaurant
+        const { data: { session } } = await supabase.auth.getSession();
+        const isSuperAdmin = session?.user?.app_metadata?.super_admin === true;
+        if (session?.user?.id && !isSuperAdmin) {
+          const { data: rs } = await supabase
+            .from("restaurant_settings")
+            .select("id")
+            .eq("owner_id", session.user.id)
+            .limit(1)
+            .maybeSingle();
+          if (rs?.id) query = query.eq("restaurant_id", rs.id);
+        }
       }
       const { data, error } = await query;
       if (error) throw error;
