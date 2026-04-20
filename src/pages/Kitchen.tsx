@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminProvider, useAdmin } from "@/contexts/AdminContext";
-import { DemoProvider, useDemo } from "@/contexts/DemoContext";
 import AdminLoginModal from "@/components/AdminLoginModal";
 import KitchenAnalyticsBar from "@/components/KitchenAnalyticsBar";
 import { useRestaurantSettings, getBusinessDayWindow } from "@/hooks/useRestaurantSettings";
@@ -29,13 +28,43 @@ type OrderWithItems = {
   order_items: OrderItem[];
 };
 
+const DEMO_ORDERS_KEY = "gilded_demo_orders";
+
+function readOrdersFromStorage(): DemoOrder[] {
+  try {
+    const raw = localStorage.getItem(DEMO_ORDERS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+type DemoOrder = import("@/contexts/DemoContext").DemoOrder;
+
 // ---------------------------------------------------------------------------
-// Demo kitchen board — reads orders from DemoContext, no auth required
+// Demo kitchen board — reads orders directly from localStorage, no auth required
 // ---------------------------------------------------------------------------
 function DemoKitchenBoard() {
-  const { demoOrders, updateDemoOrderStatus } = useDemo();
+  const [orders, setOrders] = useState<DemoOrder[]>(() => readOrdersFromStorage());
 
-  const pending = demoOrders.filter((o) => o.status === "new" || o.status === "in-progress");
+  // Poll localStorage every 3s and listen for cross-tab storage events
+  useEffect(() => {
+    const sync = () => setOrders(readOrdersFromStorage());
+    const interval = setInterval(sync, 3000);
+    window.addEventListener("storage", sync);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+
+  const markReady = (id: string) => {
+    const updated = orders.map((o) => o.id === id ? { ...o, status: "completed" as const } : o);
+    localStorage.setItem(DEMO_ORDERS_KEY, JSON.stringify(updated));
+    setOrders(updated);
+    toast.success("Order marked as ready!");
+  };
+
+  const pending = orders.filter((o) => o.status === "new" || o.status === "in-progress");
 
   return (
     <div className="min-h-screen bg-background">
@@ -55,7 +84,7 @@ function DemoKitchenBoard() {
         </div>
       </header>
 
-      <KitchenAnalyticsBar businessHours={null} demoOrders={demoOrders} />
+      <KitchenAnalyticsBar businessHours={null} demoOrders={orders} />
 
       <div className="container py-6">
         {pending.length === 0 ? (
@@ -102,7 +131,7 @@ function DemoKitchenBoard() {
 
                 <div className="px-4 pb-4 pt-1 border-t border-border">
                   <Button
-                    onClick={() => { updateDemoOrderStatus(order.id, "completed"); toast.success("Order marked as ready!"); }}
+                    onClick={() => markReady(order.id)}
                     className="w-full bg-green-600 hover:bg-green-700 text-white font-bold text-sm h-10"
                   >
                     <Check className="w-4 h-4 mr-2" />
@@ -278,11 +307,7 @@ export default function KitchenPage() {
   const isDemo = new URLSearchParams(window.location.search).get("demo") === "1";
 
   if (isDemo) {
-    return (
-      <DemoProvider>
-        <DemoKitchenBoard />
-      </DemoProvider>
-    );
+    return <DemoKitchenBoard />;
   }
 
   return (

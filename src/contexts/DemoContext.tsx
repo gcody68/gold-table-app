@@ -231,13 +231,22 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       time: "just now",
       createdAt: Date.now(),
     };
-    setDemoOrders((prev) => [newOrder, ...prev]);
+    setDemoOrders((prev) => {
+      const updated = [newOrder, ...prev];
+      // Write immediately so storage event fires in kitchen tab before next render
+      saveToStorage(DEMO_ORDERS_KEY, updated);
+      return updated;
+    });
     triggerSync();
     setCompletedSteps((prev) => new Set([...prev, "ordering" as DemoStep]));
   }, [triggerSync]);
 
   const updateDemoOrderStatus = useCallback((id: string, status: DemoOrder["status"]) => {
-    setDemoOrders((prev) => prev.map((o) => o.id === id ? { ...o, status } : o));
+    setDemoOrders((prev) => {
+      const updated = prev.map((o) => o.id === id ? { ...o, status } : o);
+      saveToStorage(DEMO_ORDERS_KEY, updated);
+      return updated;
+    });
   }, []);
 
   const resetDemo = useCallback(() => {
