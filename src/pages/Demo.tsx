@@ -8,7 +8,7 @@ import DemoAdminPanel from "@/components/demo/DemoAdminPanel";
 import DemoMenuGrid from "@/components/demo/DemoMenuGrid";
 import DemoCartSidebar from "@/components/demo/DemoCartSidebar";
 import CartFAB from "@/components/CartFAB";
-import FloatingNavSelector from "@/components/FloatingNavSelector";
+import DemoFloatingNavSelector from "@/components/demo/DemoFloatingNavSelector";
 import { useLightMode } from "@/hooks/useLightMode";
 import { Settings, Sun, Moon, RotateCcw, X } from "lucide-react";
 import heroDefault from "@/assets/hero-restaurant.jpg";
@@ -122,7 +122,7 @@ function DemoContent() {
 
       <CartFAB />
       <DemoCartSidebar />
-      <FloatingNavSelector />
+      <DemoFloatingNavSelector />
 
       <footer className="border-t border-border py-8 text-center">
         <p className="text-muted-foreground text-xs">
