@@ -66,6 +66,9 @@ export default function SiteSettingsTab({ settings }: Props) {
   const [customDomain, setCustomDomain] = useState(settings.custom_domain ?? "");
   const [saving, setSaving] = useState(false);
   const [subdomainError, setSubdomainError] = useState("");
+  const [customDomainManual, setCustomDomainManual] = useState(
+    !!(settings.custom_domain && settings.custom_domain !== `${settings.subdomain}.com`)
+  );
 
   useEffect(() => {
     setSubdomain(settings.subdomain ?? "");
@@ -73,8 +76,17 @@ export default function SiteSettingsTab({ settings }: Props) {
   }, [settings.subdomain, settings.custom_domain]);
 
   const handleSubdomainChange = (val: string) => {
-    setSubdomain(slugify(val));
+    const slug = slugify(val);
+    setSubdomain(slug);
     setSubdomainError("");
+    if (!customDomainManual) {
+      setCustomDomain(slug ? `${slug}.com` : "");
+    }
+  };
+
+  const handleCustomDomainChange = (val: string) => {
+    setCustomDomainManual(true);
+    setCustomDomain(val.trim());
   };
 
   const handleSave = async () => {
@@ -147,8 +159,8 @@ export default function SiteSettingsTab({ settings }: Props) {
             <Input
               value={subdomain}
               onChange={(e) => handleSubdomainChange(e.target.value)}
-              placeholder="island-cafe"
-              className="rounded-none border-0 bg-secondary focus-visible:ring-0 font-mono text-sm flex-1 min-w-0"
+              placeholder="your-restaurant-name"
+              className="rounded-none border-0 bg-secondary focus-visible:ring-0 font-mono text-sm flex-1 min-w-0 placeholder:text-muted-foreground/40"
             />
             <span className="bg-muted/60 px-3 py-2 text-xs text-muted-foreground border-l border-border whitespace-nowrap font-mono select-none">
               .{SUBDOMAIN_HOST}
@@ -181,9 +193,9 @@ export default function SiteSettingsTab({ settings }: Props) {
           </p>
           <Input
             value={customDomain}
-            onChange={(e) => setCustomDomain(e.target.value.trim())}
-            placeholder="menu.joesdiner.com"
-            className="bg-secondary border-border font-mono text-sm"
+            onChange={(e) => handleCustomDomainChange(e.target.value)}
+            placeholder="www.your-restaurant-name.com"
+            className="bg-secondary border-border font-mono text-sm placeholder:text-muted-foreground/40"
           />
         </div>
       </div>
