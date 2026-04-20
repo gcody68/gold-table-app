@@ -14,12 +14,24 @@ export type GalleryItem = {
 export function useGalleryItems(restaurantId?: string | null) {
   const demo = useDemoMode();
   return useQuery({
-    queryKey: ["gallery-items", restaurantId ?? "all"],
+    queryKey: ["gallery-items", restaurantId ?? "owner"],
     queryFn: async () => {
       if (demo) return demo.getGalleryItems();
       let query = supabase.from("gallery_items").select("*").order("sort_order");
       if (restaurantId) {
         query = query.eq("restaurant_id", restaurantId);
+      } else {
+        const { data: { session } } = await supabase.auth.getSession();
+        const isSuperAdmin = session?.user?.app_metadata?.super_admin === true;
+        if (session?.user?.id && !isSuperAdmin) {
+          const { data: rs } = await supabase
+            .from("restaurant_settings")
+            .select("id")
+            .eq("owner_id", session.user.id)
+            .limit(1)
+            .maybeSingle();
+          if (rs?.id) query = query.eq("restaurant_id", rs.id);
+        }
       }
       const { data, error } = await query;
       if (error) throw error;
