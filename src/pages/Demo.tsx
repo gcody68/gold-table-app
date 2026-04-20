@@ -16,7 +16,7 @@ import CartSidebar from "@/components/CartSidebar";
 import CartFAB from "@/components/CartFAB";
 import GallerySection from "@/components/GallerySection";
 import FloatingNavSelector from "@/components/FloatingNavSelector";
-import { RotateCcw, X } from "lucide-react";
+import { RotateCcw, X, Shield } from "lucide-react";
 import { toast } from "sonner";
 import type { GalleryItem } from "@/hooks/useGallery";
 import type { RestaurantSettings } from "@/hooks/useRestaurantSettings";
@@ -36,7 +36,7 @@ function DemoContent() {
   } = useDemo();
 
   const [showAdmin, setShowAdmin] = useState(false);
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(true);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
 
   // Enable in-memory image uploads
@@ -165,7 +165,12 @@ function DemoContent() {
             {/* Demo banner */}
             <div className="bg-amber-950/60 border-b border-amber-700/40 px-4 py-2 flex items-center justify-between gap-4">
               <p className="text-xs text-amber-300/80 flex-1 text-center">
-                Demo Mode: Changes are saved locally to your browser only.{" "}
+                Demo Mode &mdash; changes are saved to your browser only.{" "}
+                To access admin, tap the{" "}
+                <span className="inline-flex items-center gap-0.5 text-gold font-semibold">
+                  <Shield className="w-3 h-3 inline" /> shield icon
+                </span>{" "}
+                in the top-right (username: <span className="font-semibold text-gold">test</span>, password: <span className="font-semibold text-gold">test</span>).{" "}
                 <Link to="/" className="text-gold font-semibold underline underline-offset-2 hover:text-gold/80 transition-colors">
                   Start Free Trial
                 </Link>
