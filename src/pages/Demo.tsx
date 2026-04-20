@@ -115,7 +115,7 @@ function DemoContent() {
 
       <DemoNavbar showAdmin={showAdmin} onToggleAdmin={() => setShowAdmin(!showAdmin)} />
 
-      {showAdmin && <DemoAdminPanel />}
+      {showAdmin && <DemoAdminPanel onLogout={() => setShowAdmin(false)} />}
 
       <DemoHeroSection />
       <DemoMenuGrid />

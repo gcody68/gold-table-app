@@ -5,14 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ThemeSelector from "@/components/ThemeSelector";
 import BackgroundStyleSelector, { type BgStyleId, applyBgStyle, getBgStyleById } from "@/components/BackgroundStyleSelector";
 import { type ThemeId, applyTheme, getThemeById } from "@/lib/themes";
 import { toast } from "sonner";
 import {
   Save, Loader as Loader2, Settings, Clock, FileSpreadsheet,
-  CreditCard, Monitor, Globe, Trash2, Lock, KeyRound,
+  CreditCard, Monitor, Globe, Trash2, Lock, LogOut, ExternalLink,
 } from "lucide-react";
 import ServiceHoursTab from "@/components/ServiceHoursTab";
 import { type ServiceHours, type BusinessHours, DEFAULT_SERVICE_HOURS, DEFAULT_BUSINESS_HOURS } from "@/hooks/useRestaurantSettings";
@@ -22,9 +21,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { STARTER_ITEMS } from "@/components/StarterContent";
 import DemoImagePicker from "./DemoImagePicker";
+import DemoExcelImporter from "./DemoExcelImporter";
 
-export default function DemoAdminPanel() {
-  const { settings, updateSettings, loadSampleMenu, menuItems, resetDemo, createMenuItem, clearMenuItems } = useDemo();
+type Props = { onLogout: () => void };
+
+export default function DemoAdminPanel({ onLogout }: Props) {
+  const { settings, updateSettings, menuItems, resetDemo, createMenuItem, clearMenuItems } = useDemo();
 
   const [name, setName] = useState(settings.business_name);
   const [address, setAddress] = useState(settings.business_address ?? "");
@@ -37,6 +39,8 @@ export default function DemoAdminPanel() {
   const [serviceHours, setServiceHours] = useState<ServiceHours>(settings.service_hours ?? DEFAULT_SERVICE_HOURS);
   const [businessHours, setBusinessHours] = useState<BusinessHours>(settings.business_hours ?? DEFAULT_BUSINESS_HOURS);
   const [unavailableDisplay, setUnavailableDisplay] = useState<"hide" | "gray">(settings.unavailable_display ?? "hide");
+  const [paymentEnabled, setPaymentEnabled] = useState(settings.payment_enabled ?? false);
+  const [kitchenEnabled, setKitchenEnabled] = useState(settings.kitchen_view_enabled ?? false);
   const [loadingMenu, setLoadingMenu] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [initialized, setInitialized] = useState(false);
@@ -53,6 +57,8 @@ export default function DemoAdminPanel() {
     setServiceHours(settings.service_hours ?? DEFAULT_SERVICE_HOURS);
     setBusinessHours(settings.business_hours ?? DEFAULT_BUSINESS_HOURS);
     setUnavailableDisplay(settings.unavailable_display ?? "hide");
+    setPaymentEnabled(settings.payment_enabled ?? false);
+    setKitchenEnabled(settings.kitchen_view_enabled ?? false);
     setInitialized(true);
   }
 
@@ -81,6 +87,8 @@ export default function DemoAdminPanel() {
       service_hours: serviceHours,
       business_hours: businessHours,
       unavailable_display: unavailableDisplay,
+      payment_enabled: paymentEnabled,
+      kitchen_view_enabled: kitchenEnabled,
     });
     toast.success("Settings saved!");
   };
@@ -120,8 +128,13 @@ export default function DemoAdminPanel() {
               <span className="text-xs text-amber-300/80 bg-amber-950/60 border border-amber-700/40 px-3 py-1 rounded-full font-medium">
                 Demo Mode
               </span>
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed" disabled>
-                <KeyRound className="w-4 h-4 mr-1" /> Password
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onLogout}
+                className="text-muted-foreground hover:text-foreground gap-1.5"
+              >
+                <LogOut className="w-4 h-4" /> Log Out
               </Button>
             </div>
           </div>
@@ -160,7 +173,6 @@ export default function DemoAdminPanel() {
                 <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="bg-secondary border-border" />
               </div>
 
-              {/* Logo */}
               <DemoImagePicker
                 value={logoUrl}
                 onChange={setLogoUrl}
@@ -170,7 +182,6 @@ export default function DemoAdminPanel() {
                 objectFit="contain"
               />
 
-              {/* Header image */}
               <DemoImagePicker
                 value={headerUrl}
                 onChange={setHeaderUrl}
@@ -179,7 +190,6 @@ export default function DemoAdminPanel() {
                 objectFit="cover"
               />
 
-              {/* Gallery toggle */}
               <div className="flex items-center justify-between py-2 border border-border rounded-lg px-4">
                 <div>
                   <p className="text-sm font-medium text-foreground">Show Gallery Section</p>
@@ -193,7 +203,6 @@ export default function DemoAdminPanel() {
               <div className="border-b border-border" />
               <BackgroundStyleSelector value={bgStyle} onChange={handleBgStyleChange} />
 
-              {/* Import & Demo Data */}
               <div className="border-b border-border pb-2">
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Import & Demo Data</h3>
               </div>
@@ -253,50 +262,73 @@ export default function DemoAdminPanel() {
 
             {/* ── PAYMENT ── */}
             <TabsContent value="payment" className="space-y-6">
-              <div className="flex items-center justify-between py-2 border border-border rounded-lg px-4 opacity-60">
+              <div className="flex items-center justify-between py-2 border border-border rounded-lg px-4">
                 <div>
                   <p className="text-sm font-medium text-foreground">Enable Online Payments</p>
                   <p className="text-xs text-muted-foreground">Collect card payments at checkout</p>
                 </div>
-                <Switch checked={false} disabled />
+                <Switch
+                  checked={paymentEnabled}
+                  onCheckedChange={(v) => {
+                    setPaymentEnabled(v);
+                    updateSettings({ payment_enabled: v });
+                    toast.success(v ? "Online payments enabled" : "Payments disabled — using Pay in Person");
+                  }}
+                />
               </div>
-              <div className="rounded-lg border border-border bg-secondary/40 p-4 flex items-start gap-3">
-                <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">Not Available in Demo</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Payment configuration requires a live account. Start a free trial to connect Stripe and collect real payments.
+              {paymentEnabled ? (
+                <div className="rounded-lg border border-border bg-secondary/40 p-4 space-y-3">
+                  <p className="text-sm font-medium text-foreground">Stripe Connected</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    In your live account you would connect your Stripe keys here. In the demo, payments are simulated — customers see the checkout flow but no real charge is made.
                   </p>
                 </div>
-              </div>
-              <div className="text-center py-6 text-muted-foreground">
-                <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">Demo orders use "Pay in Person" flow.</p>
-              </div>
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">Demo orders use "Pay in Person" flow.</p>
+                  <p className="text-xs mt-1 opacity-70">Toggle the switch above to preview the payment-enabled experience.</p>
+                </div>
+              )}
             </TabsContent>
 
             {/* ── KITCHEN ── */}
             <TabsContent value="kitchen" className="space-y-6">
-              <div className="flex items-center justify-between py-2 border border-border rounded-lg px-4 opacity-60">
+              <div className="flex items-center justify-between py-2 border border-border rounded-lg px-4">
                 <div>
                   <p className="text-sm font-medium text-foreground">Kitchen Display</p>
                   <p className="text-xs text-muted-foreground">Enable the /kitchen page for your kitchen staff</p>
                 </div>
-                <Switch checked={false} disabled />
+                <Switch
+                  checked={kitchenEnabled}
+                  onCheckedChange={(v) => {
+                    setKitchenEnabled(v);
+                    updateSettings({ kitchen_view_enabled: v });
+                    toast.success(v ? "Kitchen display enabled" : "Kitchen display disabled");
+                  }}
+                />
               </div>
-              <div className="rounded-lg border border-border bg-secondary/40 p-4 flex items-start gap-3">
-                <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">Not Available in Demo</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    The live kitchen display is not available in Demo Mode. In your real account, orders placed by customers appear on the Kitchen screen in real-time.
+              {kitchenEnabled ? (
+                <div className="rounded-lg border border-border bg-secondary/40 p-4 space-y-3">
+                  <p className="text-sm font-medium text-foreground">Kitchen Display is Active</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Orders placed by customers appear on the kitchen screen in real-time. Open the kitchen view in a separate tab or device for your kitchen staff.
                   </p>
+                  <a
+                    href="/kitchen"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-xs font-semibold text-gold hover:underline"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" /> Open Kitchen Display
+                  </a>
                 </div>
-              </div>
-              <div className="text-center py-6 text-muted-foreground">
-                <Monitor className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">Start a free account to enable the Kitchen Display.</p>
-              </div>
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Monitor className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">Toggle the switch above to enable the Kitchen Display.</p>
+                </div>
+              )}
             </TabsContent>
 
             {/* ── SITE ── */}
@@ -355,33 +387,7 @@ export default function DemoAdminPanel() {
         </div>
       </div>
 
-      {/* Import Not Available modal */}
-      <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
-        <DialogContent className="bg-card border-border max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="font-serif text-gold flex items-center gap-2">
-              <FileSpreadsheet className="w-5 h-5" /> Import Menu
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="rounded-lg border border-amber-700/40 bg-amber-950/40 p-4 text-center space-y-2">
-              <p className="text-sm font-semibold text-amber-300">Not Available in Demo Mode</p>
-              <p className="text-xs text-amber-300/70 leading-relaxed">
-                Excel import requires a live account. In the meantime, add your menu manually.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Add Your Menu Manually</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Use the <span className="text-gold font-medium">Load Demo Items</span> button to populate sample items instantly, or click any category in the menu grid and use the <span className="text-gold font-medium">+ Add Item</span> button to create your own items.
-              </p>
-            </div>
-            <Button onClick={() => setShowImportModal(false)} className="w-full gradient-gold text-primary-foreground font-semibold">
-              Got it
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <DemoExcelImporter open={showImportModal} onClose={() => setShowImportModal(false)} />
     </>
   );
 }
