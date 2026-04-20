@@ -156,16 +156,18 @@ export default function AdminPanel() {
       toast.success("All data cleared!");
       return;
     }
-    if (!settings?.id) return;
+    if (!settings?.id) { toast.error("Restaurant not loaded yet — try again."); return; }
     setClearing(true);
     try {
-      await supabase.from("menu_items").delete().eq("restaurant_id", settings.id);
-      await supabase.from("gallery_items").delete().eq("restaurant_id", settings.id);
+      const { error: menuErr } = await supabase.from("menu_items").delete().eq("restaurant_id", settings.id);
+      if (menuErr) throw new Error(menuErr.message);
+      const { error: galleryErr } = await supabase.from("gallery_items").delete().eq("restaurant_id", settings.id);
+      if (galleryErr) throw new Error(galleryErr.message);
       qc.invalidateQueries({ queryKey: ["menu-items"] });
       qc.invalidateQueries({ queryKey: ["gallery-items"] });
       toast.success("All data cleared!");
-    } catch {
-      toast.error("Failed to clear data");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to clear data");
     } finally {
       setClearing(false);
     }
