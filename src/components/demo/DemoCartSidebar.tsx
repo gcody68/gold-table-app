@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCart } from "@/contexts/CartContext";
 import { useDemo } from "@/contexts/DemoContext";
-import { Minus, Plus, Trash2, ShoppingBag, CircleCheck as CheckCircle2, MessageSquare } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, Loader as Loader2, CircleCheck as CheckCircle2, MessageSquare } from "lucide-react";
 
 type Step = "cart" | "checkout" | "confirmation";
 
@@ -17,17 +17,15 @@ export default function DemoCartSidebar() {
   const [nameError, setNameError] = useState("");
   const [phoneError, setPhoneError] = useState("");
 
-  const validateCheckout = () => {
+  const validate = () => {
     let valid = true;
-    if (!customerInfo.name.trim()) { setNameError("Name is required"); valid = false; }
-    else setNameError("");
-    if (!customerInfo.phone.trim()) { setPhoneError("Phone is required"); valid = false; }
-    else setPhoneError("");
+    if (!customerInfo.name.trim()) { setNameError("Name is required"); valid = false; } else setNameError("");
+    if (!customerInfo.phone.trim()) { setPhoneError("Phone is required"); valid = false; } else setPhoneError("");
     return valid;
   };
 
   const handlePlaceOrder = async () => {
-    if (!validateCheckout()) return;
+    if (!validate()) return;
     setSubmitting(true);
     await new Promise((r) => setTimeout(r, 600));
     addDemoOrder({
@@ -65,14 +63,14 @@ export default function DemoCartSidebar() {
             {settings?.logo_url ? (
               <img src={settings.logo_url} alt={settings.business_name || "Logo"} className="h-16 max-w-[200px] object-contain mb-2" />
             ) : (
-              <span className="font-serif text-2xl font-semibold text-gold">
+              <span className="font-serif text-2xl font-semibold text-gold" style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>
                 {settings?.business_name || "Restaurant"}
               </span>
             )}
             <CheckCircle2 className="w-14 h-14 text-gold" />
             <h3 className="text-2xl font-serif font-bold text-foreground">Order Placed!</h3>
             <p className="text-muted-foreground leading-relaxed">
-              Your demo order has been sent to the Kitchen view. Switch to the Kitchen tab to see it!
+              This is a demo — your order is saved locally in your browser.
             </p>
             <Button onClick={handleClose} className="mt-6 gradient-gold text-primary-foreground font-semibold">
               Done
@@ -148,7 +146,7 @@ export default function DemoCartSidebar() {
                 disabled={submitting}
                 className="w-full gradient-gold text-primary-foreground font-semibold h-12 text-base"
               >
-                {submitting ? "Placing Order..." : "Place Order (Demo)"}
+                {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Place Order (Demo)"}
               </Button>
               <Button variant="ghost" onClick={() => setStep("cart")} className="w-full text-muted-foreground">
                 Back to Cart
@@ -177,23 +175,14 @@ export default function DemoCartSidebar() {
                           <p className="text-gold text-sm">${Number(ci.menuItem.price).toFixed(2)}</p>
                         </div>
                         <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => updateQuantity(ci.menuItem.id, ci.quantity - 1)}
-                            className="w-7 h-7 rounded-md bg-card flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                          >
+                          <button onClick={() => updateQuantity(ci.menuItem.id, ci.quantity - 1)} className="w-7 h-7 rounded-md bg-card flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
                             <Minus className="w-3.5 h-3.5" />
                           </button>
                           <span className="w-6 text-center text-sm font-medium text-foreground">{ci.quantity}</span>
-                          <button
-                            onClick={() => updateQuantity(ci.menuItem.id, ci.quantity + 1)}
-                            className="w-7 h-7 rounded-md bg-card flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                          >
+                          <button onClick={() => updateQuantity(ci.menuItem.id, ci.quantity + 1)} className="w-7 h-7 rounded-md bg-card flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
                             <Plus className="w-3.5 h-3.5" />
                           </button>
-                          <button
-                            onClick={() => removeItem(ci.menuItem.id)}
-                            className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors ml-1"
-                          >
+                          <button onClick={() => removeItem(ci.menuItem.id)} className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors ml-1">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
@@ -209,6 +198,12 @@ export default function DemoCartSidebar() {
                 </div>
 
                 <div className="border-t border-border pt-4 mt-4 space-y-3 pb-4">
+                  {customerInfo.name && (
+                    <div className="text-xs text-muted-foreground bg-secondary/50 rounded-md px-3 py-2">
+                      Ordering as <span className="font-semibold text-foreground">{customerInfo.name}</span>
+                      {customerInfo.phone && <> &middot; {customerInfo.phone}</>}
+                    </div>
+                  )}
                   <div className="flex justify-between text-lg font-semibold">
                     <span className="text-foreground">Total</span>
                     <span className="text-gold">${total.toFixed(2)}</span>

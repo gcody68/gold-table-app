@@ -7,8 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { CATEGORIES, MEAL_PERIODS, type MenuItem, type MealPeriod } from "@/hooks/useMenuItems";
-import { Trash2 } from "lucide-react";
 import { useDemo } from "@/contexts/DemoContext";
+import { ImagePlus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 type Props =
@@ -19,22 +19,20 @@ export default function DemoMenuItemModal(props: Props) {
   const { onClose } = props;
   const isNew = !props.item;
   const item = props.item;
+
   const { createMenuItem, updateMenuItem, deleteMenuItem } = useDemo();
 
-  const [name, setName] = useState(item?.name ?? "");
-  const [description, setDescription] = useState(item?.description ?? "");
+  const [name, setName] = useState(item ? item.name : "");
+  const [description, setDescription] = useState(item?.description || "");
   const [price, setPrice] = useState(item ? String(item.price) : "");
-  const [imageUrl, setImageUrl] = useState(item?.image_url ?? "");
-  const [category, setCategory] = useState(item?.category ?? props.category ?? "Breakfast");
+  const [imageUrl, setImageUrl] = useState(item?.image_url || "");
+  const [category, setCategory] = useState(item?.category || props.category || "Breakfast");
   const [mealPeriod, setMealPeriod] = useState<MealPeriod>(item?.meal_period ?? "all-day");
   const [isAvailable, setIsAvailable] = useState(item?.is_available ?? true);
   const [dailyStock, setDailyStock] = useState(item?.daily_stock != null ? String(item.daily_stock) : "");
 
   const handleSave = () => {
-    if (!name.trim()) {
-      toast.error("Name is required");
-      return;
-    }
+    if (!name.trim()) { toast.error("Name is required"); return; }
     const parsedStock = dailyStock.trim() !== "" ? parseInt(dailyStock, 10) : null;
     const payload = {
       name: name.trim(),
@@ -46,19 +44,20 @@ export default function DemoMenuItemModal(props: Props) {
       is_available: isAvailable,
       daily_stock: parsedStock,
     };
+
     if (isNew) {
       createMenuItem(payload);
     } else {
       updateMenuItem(item.id, payload);
     }
-    toast.success(isNew ? "Item added!" : "Item updated!");
+    toast.success("Menu item saved!");
     onClose();
   };
 
   const handleDelete = () => {
     if (!item) return;
     deleteMenuItem(item.id);
-    toast.success("Item removed");
+    toast.success("Item deleted");
     onClose();
   };
 
@@ -72,14 +71,25 @@ export default function DemoMenuItemModal(props: Props) {
         </DialogHeader>
 
         <div className="space-y-4">
-          <div>
-            <Label className="text-muted-foreground text-xs">Image URL</Label>
-            <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." className="bg-secondary border-border" />
-            {imageUrl && (
-              <div className="mt-2 rounded-lg overflow-hidden aspect-[4/3]">
-                <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
+          <div className="w-full aspect-[4/3] rounded-lg bg-secondary border-2 border-dashed border-border flex items-center justify-center overflow-hidden">
+            {imageUrl ? (
+              <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
+            ) : (
+              <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                <ImagePlus className="w-8 h-8" />
+                <span className="text-xs">Enter image URL below</span>
               </div>
             )}
+          </div>
+
+          <div>
+            <Label className="text-muted-foreground text-xs">Image URL</Label>
+            <Input
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="https://..."
+              className="bg-secondary border-border"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -90,24 +100,19 @@ export default function DemoMenuItemModal(props: Props) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
+                  {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-
             <div>
-              <Label className="text-muted-foreground text-xs">Service Period</Label>
+              <Label className="text-muted-foreground text-xs">Meal Period</Label>
               <Select value={mealPeriod} onValueChange={(v) => setMealPeriod(v as MealPeriod)}>
                 <SelectTrigger className="bg-secondary border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {MEAL_PERIODS.map((p) => (
-                    <SelectItem key={p.value} value={p.value}>
-                      {p.label} · {p.hours}
-                    </SelectItem>
+                    <SelectItem key={p.value} value={p.value}>{p.label} · {p.hours}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -130,14 +135,14 @@ export default function DemoMenuItemModal(props: Props) {
           </div>
 
           <div>
-            <Label className="text-muted-foreground text-xs">Daily Stock (leave blank = unlimited)</Label>
+            <Label className="text-muted-foreground text-xs">Daily Stock (leave blank for unlimited)</Label>
             <Input type="number" min="0" value={dailyStock} onChange={(e) => setDailyStock(e.target.value)} placeholder="Unlimited" className="bg-secondary border-border" />
           </div>
 
           <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/40 px-4 py-3">
             <div>
               <p className="text-sm font-medium text-foreground">Available</p>
-              <p className="text-xs text-muted-foreground">Disable without deleting</p>
+              <p className="text-xs text-muted-foreground">Quickly disable without deleting</p>
             </div>
             <Switch checked={isAvailable} onCheckedChange={setIsAvailable} />
           </div>

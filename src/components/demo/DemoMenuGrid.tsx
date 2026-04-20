@@ -1,7 +1,3 @@
-import { useState, useMemo } from "react";
-import { resolveImageUrl } from "@/lib/utils";
-import { useDemo } from "@/contexts/DemoContext";
-import { useCart } from "@/contexts/CartContext";
 import {
   CATEGORIES,
   ADMIN_ONLY_CATEGORIES,
@@ -9,9 +5,15 @@ import {
   type MenuItem,
   type MealPeriod,
 } from "@/hooks/useMenuItems";
-import { useMealPeriodConfig } from "@/hooks/useMealPeriodConfig";
-import { Plus, UtensilsCrossed, ShoppingBag, Clock, ToggleLeft, Zap } from "lucide-react";
+import { useDemoMealPeriodConfig } from "@/hooks/useDemoMealPeriodConfig";
+import { useDemo } from "@/contexts/DemoContext";
+import { useCart } from "@/contexts/CartContext";
+import { Plus, UtensilsCrossed, ShoppingBag, Clock, ToggleLeft, Zap, ZoomIn } from "lucide-react";
+import { useState, useMemo } from "react";
+import ImageLightbox from "@/components/ImageLightbox";
+import { resolveImageUrl } from "@/lib/utils";
 import DemoMenuItemModal from "./DemoMenuItemModal";
+import DemoOrderCustomizationModal from "./DemoOrderCustomizationModal";
 
 const CATEGORY_TO_PERIOD: Record<string, MealPeriod> = {
   Breakfast: "breakfast",
@@ -30,17 +32,33 @@ function isSoldOut(item: MenuItem): boolean {
   return !item.is_available || (item.daily_stock != null && item.daily_stock <= 0);
 }
 
+function CountdownBadge({ minutesLeft, periodLabel }: { minutesLeft: number; periodLabel: string }) {
+  if (minutesLeft > 15) return null;
+  const label =
+    minutesLeft <= 1
+      ? `${periodLabel} ends in less than a minute`
+      : `${periodLabel} ends in ${minutesLeft} min`;
+  return (
+    <span className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs px-2 py-0.5 rounded-full font-medium">
+      <Clock className="w-3 h-3" />
+      {label}
+    </span>
+  );
+}
+
 function AddToOrderButton({
   item,
   periodLabel,
   periodActive,
   periodStartLabel,
+  minutesUntilEnd,
   onAdd,
 }: {
   item: MenuItem;
   periodLabel: string;
   periodActive: boolean;
   periodStartLabel: string;
+  minutesUntilEnd: number | null;
   onAdd: (e: React.MouseEvent) => void;
 }) {
   const soldOut = isSoldOut(item);
@@ -54,29 +72,38 @@ function AddToOrderButton({
   }
 
   if (!periodActive) {
+    const timeInfo = periodStartLabel ? `Served from ${periodStartLabel}` : `${periodLabel} only`;
     return (
-      <button disabled className="w-full bg-secondary text-muted-foreground font-medium py-2.5 text-xs flex items-center justify-center gap-2 cursor-not-allowed rounded opacity-70">
-        <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-        Available during {periodLabel} from {periodStartLabel}
+      <button disabled className="w-full bg-secondary/60 text-muted-foreground font-medium py-2.5 text-xs flex items-center justify-center gap-2 cursor-not-allowed rounded border border-border/50">
+        <Clock className="w-3.5 h-3.5 flex-shrink-0 text-amber-400/70" />
+        {timeInfo}
       </button>
     );
   }
 
   return (
-    <button onClick={onAdd} className="w-full gradient-gold text-primary-foreground font-semibold py-2.5 text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity rounded">
-      <ShoppingBag className="w-4 h-4" /> Add to Order
-    </button>
+    <div className="space-y-1.5">
+      {minutesUntilEnd != null && minutesUntilEnd <= 15 && (
+        <CountdownBadge minutesLeft={minutesUntilEnd} periodLabel={periodLabel} />
+      )}
+      <button
+        onClick={onAdd}
+        className="w-full gradient-gold text-primary-foreground font-semibold py-2.5 text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity rounded"
+      >
+        <ShoppingBag className="w-4 h-4" /> Add to Order
+      </button>
+    </div>
   );
 }
 
-export default function DemoMenuGrid({ forceCustomer = false }: { forceCustomer?: boolean }) {
-  const { menuItems, isAdmin: contextIsAdmin } = useDemo();
-  const isAdmin = forceCustomer ? false : contextIsAdmin;
-  const { setPendingItem } = useCart();
+function DemoMenuGridInner() {
+  const { menuItems: items, isAdmin } = useDemo();
+  const { setPendingItem, pendingItem } = useCart();
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [creatingCategory, setCreatingCategory] = useState<string | null>(null);
+  const [lightboxItem, setLightboxItem] = useState<{ src: string; caption: string | null } | null>(null);
 
-  const { currentPeriod, unavailableDisplay, getPeriodStatus, isPeriodActive } = useMealPeriodConfig();
+  const { currentPeriod, getPeriodStatus, isPeriodActive } = useDemoMealPeriodConfig();
 
   const handleAddToCart = (e: React.MouseEvent, item: MenuItem) => {
     e.stopPropagation();
@@ -85,26 +112,14 @@ export default function DemoMenuGrid({ forceCustomer = false }: { forceCustomer?
 
   const grouped = useMemo(() => {
     const groups = CATEGORIES.map((cat) => {
-      const allCatItems = menuItems.filter((i) => i.category === cat);
+      const allCatItems = items.filter((i) => i.category === cat);
       const catPeriod: MealPeriod | null = CATEGORY_TO_PERIOD[cat] ?? null;
-
-      let displayItems: MenuItem[];
-      if (isAdmin) {
-        displayItems = allCatItems;
-      } else if (unavailableDisplay === "hide") {
-        displayItems = allCatItems.filter(
-          (i) => !isSoldOut(i) && isPeriodActive(i.meal_period)
-        );
-      } else {
-        displayItems = allCatItems;
-      }
-
       const isCatActive = catPeriod ? isPeriodActive(catPeriod) : true;
       const periodStatus = catPeriod ? getPeriodStatus(catPeriod) : null;
 
       return {
         category: cat,
-        items: displayItems,
+        items: allCatItems,
         isAdminOnly: ADMIN_ONLY_CATEGORIES.includes(cat),
         isActive: isCatActive,
         categoryPeriod: catPeriod,
@@ -120,6 +135,7 @@ export default function DemoMenuGrid({ forceCustomer = false }: { forceCustomer?
 
     const servicePeriodOrder: MealPeriod[] = ["breakfast", "lunch", "dinner"];
     const currentIdx = servicePeriodOrder.indexOf(currentPeriod);
+
     const serviceGroups = groups.filter((g) => g.categoryPeriod !== null);
     const permanentGroups = groups.filter((g) => g.categoryPeriod === null);
 
@@ -131,34 +147,33 @@ export default function DemoMenuGrid({ forceCustomer = false }: { forceCustomer?
       .filter((g) => !g.isActive && servicePeriodOrder.indexOf(g.categoryPeriod!) < currentIdx)
       .sort((a, b) => servicePeriodOrder.indexOf(a.categoryPeriod!) - servicePeriodOrder.indexOf(b.categoryPeriod!));
 
-    const sortedPermanent = permanentGroups.map((g) => ({
-      ...g,
-      isActive: g.items.some((i) => isPeriodActive(i.meal_period)),
-    }));
-
     return [
       ...activeService,
-      ...sortedPermanent.filter((g) => g.isActive),
+      ...permanentGroups.map((g) => ({ ...g, isActive: true })),
       ...upcomingService,
-      ...sortedPermanent.filter((g) => !g.isActive),
       ...pastService,
     ];
-  }, [menuItems, isAdmin, unavailableDisplay, isPeriodActive, currentPeriod, getPeriodStatus]);
+  }, [items, isAdmin, isPeriodActive, currentPeriod, getPeriodStatus]);
 
-  const currentPeriodLabel = MEAL_PERIOD_LABELS[currentPeriod];
   const currentStatus = getPeriodStatus(currentPeriod);
+  const currentPeriodLabel = MEAL_PERIOD_LABELS[currentPeriod];
 
   return (
-    <section className="py-8 space-y-10">
-      <div className="text-center space-y-1">
-        <h2 className="text-2xl font-serif font-bold text-gold">Our Menu</h2>
+    <section className="container py-12 space-y-12">
+      <div className="text-center space-y-2">
+        <h2 className="text-3xl font-serif font-bold text-gold">Our Menu</h2>
         {!isAdmin && (
-          <p className="text-xs text-muted-foreground">
-            Now serving: <span className="text-gold font-medium">{currentPeriodLabel}</span>
-            {currentStatus.enabled && (
-              <span className="text-muted-foreground"> · until {currentStatus.endLabel}</span>
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-sm text-muted-foreground">
+              Now serving: <span className="text-gold font-medium">{currentPeriodLabel}</span>
+              {currentStatus.enabled && (
+                <span className="text-muted-foreground"> · until {currentStatus.endLabel}</span>
+              )}
+            </p>
+            {currentStatus.minutesUntilEnd != null && currentStatus.minutesUntilEnd <= 15 && (
+              <CountdownBadge minutesLeft={currentStatus.minutesUntilEnd} periodLabel={currentPeriodLabel} />
             )}
-          </p>
+          </div>
         )}
       </div>
 
@@ -172,11 +187,11 @@ export default function DemoMenuGrid({ forceCustomer = false }: { forceCustomer?
             });
 
         return (
-          <div key={category} id={`demo-category-${category}`}>
-            <div className="flex flex-wrap items-center gap-2 mb-4 border-b border-border pb-2">
-              <h3 className="text-xl font-serif font-semibold text-gold/80">{category}</h3>
+          <div key={category} id={`category-${category}`}>
+            <div className="flex flex-wrap items-center gap-3 mb-6 border-b border-border pb-3">
+              <h3 className="text-2xl font-serif font-semibold text-gold/80">{category}</h3>
               {!isAdmin && isActive && categoryPeriod && (
-                <span className="inline-flex items-center gap-1 bg-gold/15 text-gold border border-gold/30 text-xs px-2 py-0.5 rounded-full font-semibold">
+                <span className="inline-flex items-center gap-1 bg-gold/15 text-gold border border-gold/30 text-xs px-2.5 py-0.5 rounded-full font-semibold">
                   <Zap className="w-3 h-3" /> Serving Now
                 </span>
               )}
@@ -187,76 +202,89 @@ export default function DemoMenuGrid({ forceCustomer = false }: { forceCustomer?
               )}
               {isAdminOnly && catItems.length === 0 && (
                 <span className="text-xs font-medium bg-gold/20 text-gold border border-gold/30 px-2 py-0.5 rounded-full">
-                  Admin only
+                  Admin only · not visible to customers
                 </span>
               )}
             </div>
 
-            <div className="grid grid-cols-1 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {sortedCatItems.map((item, i) => {
                 const soldOut = isSoldOut(item);
                 const periodStatus = getPeriodStatus(item.meal_period);
                 const periodActive = isPeriodActive(item.meal_period);
-                const unavailable = !isAdmin && (soldOut || !periodActive);
-                const shouldDim = !isAdmin && unavailableDisplay === "gray" && unavailable;
+                const shouldDim = !isAdmin && soldOut;
 
                 return (
                   <div
                     key={item.id}
-                    className={`group relative rounded-lg overflow-hidden bg-card border border-border hover:border-gold/30 transition-all duration-300 cursor-default ${shouldDim ? "opacity-50" : ""}`}
-                    style={{ animationDelay: `${i * 40}ms` }}
+                    className={`group relative rounded-lg overflow-hidden bg-card border border-border hover:border-gold/30 transition-all duration-300 animate-fade-in cursor-default ${shouldDim ? "opacity-50" : ""}`}
+                    style={{ animationDelay: `${i * 60}ms` }}
                     onClick={() => isAdmin && setEditingItem(item)}
                   >
-                    <div className="flex gap-3 p-3">
-                      {item.image_url ? (
-                        <div className="w-20 h-20 flex-shrink-0 rounded-md overflow-hidden">
-                          <img src={resolveImageUrl(item.image_url) || item.image_url!} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
+                    {item.image_url ? (
+                      <div
+                        className="w-full aspect-[4/3] overflow-hidden relative group/img cursor-pointer"
+                        onClick={(e) => { e.stopPropagation(); setLightboxItem({ src: item.image_url!, caption: item.name + (item.description ? ` — ${item.description}` : "") }); }}
+                      >
+                        <img
+                          src={resolveImageUrl(item.image_url) || item.image_url!}
+                          alt={item.name}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover/img:scale-[1.03]"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/25 transition-all duration-300 flex items-center justify-center">
+                          <ZoomIn className="w-7 h-7 text-white opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 drop-shadow-lg" />
                         </div>
-                      ) : (
-                        <div className="w-20 h-20 flex-shrink-0 rounded-md bg-secondary flex items-center justify-center">
-                          <UtensilsCrossed className="w-7 h-7 text-muted-foreground/30" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <div className="flex justify-between items-start gap-2">
-                          <h4 className="font-serif font-semibold text-foreground text-sm leading-tight">{item.name}</h4>
-                          <span className="text-gold font-semibold text-sm whitespace-nowrap">${Number(item.price).toFixed(2)}</span>
-                        </div>
-                        {item.description && (
-                          <p className="text-muted-foreground text-xs leading-relaxed line-clamp-2">{item.description}</p>
+                      </div>
+                    ) : (
+                      <div className="w-full aspect-[4/3] bg-secondary flex items-center justify-center">
+                        <UtensilsCrossed className="w-12 h-12 text-muted-foreground/30" />
+                      </div>
+                    )}
+
+                    {isAdmin && (
+                      <div className="absolute top-2 left-2 flex flex-wrap gap-1 max-w-[calc(100%-3rem)]">
+                        {!item.is_available && (
+                          <span className="bg-destructive/90 text-destructive-foreground text-xs px-2 py-0.5 rounded font-medium flex items-center gap-1">
+                            <ToggleLeft className="w-3 h-3" /> Off
+                          </span>
                         )}
-                        {isAdmin && (
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {!item.is_available && (
-                              <span className="bg-destructive/90 text-destructive-foreground text-xs px-1.5 py-0.5 rounded font-medium flex items-center gap-1">
-                                <ToggleLeft className="w-3 h-3" /> Off
-                              </span>
-                            )}
-                            {item.daily_stock != null && item.daily_stock <= 0 && (
-                              <span className="bg-orange-600/90 text-white text-xs px-1.5 py-0.5 rounded font-medium">
-                                Out of stock
-                              </span>
-                            )}
-                            {item.meal_period !== "all-day" && !SERVICE_PERIOD_CATEGORIES.includes(item.category as typeof SERVICE_PERIOD_CATEGORIES[number]) && (
-                              <span className="bg-card/90 text-muted-foreground text-xs px-1.5 py-0.5 rounded border border-border">
-                                {MEAL_PERIOD_LABELS[item.meal_period as MealPeriod]}
-                              </span>
-                            )}
-                          </div>
+                        {item.daily_stock != null && item.daily_stock <= 0 && (
+                          <span className="bg-orange-600/90 text-white text-xs px-2 py-0.5 rounded font-medium">Out of stock</span>
                         )}
-                        {!isAdmin && (
-                          <div className="pt-1">
-                            <AddToOrderButton
-                              item={item}
-                              periodLabel={MEAL_PERIOD_LABELS[item.meal_period as MealPeriod]}
-                              periodActive={periodActive}
-                              periodStartLabel={periodStatus.startLabel}
-                              onAdd={(e) => handleAddToCart(e, item)}
-                            />
-                          </div>
+                        {item.meal_period !== "all-day" && !SERVICE_PERIOD_CATEGORIES.includes(item.category as typeof SERVICE_PERIOD_CATEGORIES[number]) && (
+                          <span className="bg-card/90 text-muted-foreground text-xs px-2 py-0.5 rounded">
+                            {MEAL_PERIOD_LABELS[item.meal_period as MealPeriod]}
+                          </span>
                         )}
                       </div>
+                    )}
+
+                    <div className="p-4 space-y-2">
+                      <div className="flex justify-between items-start">
+                        <h3 className="font-serif text-lg font-semibold text-foreground">{item.name}</h3>
+                        <div className="flex flex-col items-end gap-0.5 ml-3">
+                          <span className="text-gold font-semibold whitespace-nowrap">${Number(item.price).toFixed(2)}</span>
+                          {isAdmin && item.daily_stock != null && (
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">{item.daily_stock} left</span>
+                          )}
+                        </div>
+                      </div>
+                      {item.description && (
+                        <p className="text-muted-foreground text-sm leading-relaxed">{item.description}</p>
+                      )}
+                      {!isAdmin && (
+                        <AddToOrderButton
+                          item={item}
+                          periodLabel={MEAL_PERIOD_LABELS[item.meal_period as MealPeriod]}
+                          periodActive={periodActive}
+                          periodStartLabel={periodStatus.startLabel}
+                          minutesUntilEnd={periodStatus.minutesUntilEnd}
+                          onAdd={(e) => handleAddToCart(e, item)}
+                        />
+                      )}
                     </div>
+
                     {isAdmin && (
                       <div className="absolute top-2 right-2 bg-gold/90 text-primary-foreground text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
                         Edit
@@ -267,25 +295,33 @@ export default function DemoMenuGrid({ forceCustomer = false }: { forceCustomer?
               })}
 
               {isAdmin && (
-                <button
-                  onClick={() => setCreatingCategory(category)}
-                  className="w-full rounded-lg border border-dashed border-border hover:border-gold/30 py-5 flex items-center justify-center gap-2 text-muted-foreground hover:text-gold transition-colors"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span className="text-sm font-medium">Add {category} Item</span>
-                </button>
+                <div className="rounded-lg overflow-hidden bg-card border border-dashed border-border hover:border-gold/30 transition-all duration-300">
+                  <button
+                    onClick={() => setCreatingCategory(category)}
+                    className="w-full h-full min-h-[200px] flex flex-col items-center justify-center gap-3 text-muted-foreground hover:text-gold transition-colors"
+                  >
+                    <Plus className="w-10 h-10" />
+                    <span className="text-sm font-medium">Add {category} Item</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>
         );
       })}
 
-      {editingItem && (
-        <DemoMenuItemModal item={editingItem} onClose={() => setEditingItem(null)} />
-      )}
-      {creatingCategory && (
-        <DemoMenuItemModal category={creatingCategory} onClose={() => setCreatingCategory(null)} />
+      {editingItem && <DemoMenuItemModal item={editingItem} onClose={() => setEditingItem(null)} />}
+      {creatingCategory && <DemoMenuItemModal category={creatingCategory} onClose={() => setCreatingCategory(null)} />}
+      {pendingItem && <DemoOrderCustomizationModal item={pendingItem} onClose={() => setPendingItem(null)} />}
+      {lightboxItem && (
+        <ImageLightbox
+          images={[{ src: lightboxItem.src, caption: lightboxItem.caption }]}
+          currentIndex={0}
+          onClose={() => setLightboxItem(null)}
+        />
       )}
     </section>
   );
 }
+
+export default DemoMenuGridInner;
