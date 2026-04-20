@@ -52,7 +52,7 @@ const PERIOD_CATEGORY_MAP: Record<string, string> = {
 };
 
 function normalizeCategory(raw: string): string {
-  if (!raw) return "General";
+  if (!raw) return "";
   const trimmed = raw.trim().toLowerCase();
   if (PERIOD_CATEGORY_MAP[trimmed]) return PERIOD_CATEGORY_MAP[trimmed];
   const exact = [...CATEGORIES].find((c) => c.toLowerCase() === trimmed);
@@ -60,7 +60,7 @@ function normalizeCategory(raw: string): string {
   for (const cat of CATEGORIES) {
     if (trimmed.includes(cat.toLowerCase())) return cat;
   }
-  return "General";
+  return "";
 }
 
 function normalizePeriod(raw: string, category?: string): MealPeriod {
@@ -115,7 +115,7 @@ function isMenuSheet(name: string): boolean {
 
 function isGallerySheet(name: string): boolean {
   const lower = name.toLowerCase();
-  return lower.includes("gallery") || lower.includes("photo") || lower.includes("image");
+  return lower.includes("gallery") || lower.includes("photo") || lower.includes("image") || lower.includes("pic");
 }
 
 function isInfoSheet(name: string): boolean {
@@ -165,10 +165,17 @@ function parseMenuSheet(buffer: ArrayBuffer): ParsedData {
         if (!name) continue;
         const rawCat = getVal(row, categoryCol);
         const rawPeriod = getVal(row, periodCol);
-        const category = normalizeCategory(rawCat);
+        const rawCategory = normalizeCategory(rawCat);
         const meal_period = hasPeriodCol
-          ? normalizePeriod(rawPeriod, category)
-          : derivePeriodFromCategory(category);
+          ? normalizePeriod(rawPeriod, rawCategory)
+          : derivePeriodFromCategory(rawCategory);
+        // if category couldn't be determined from the sheet, derive it from meal_period
+        const category = rawCategory || (
+          meal_period === "breakfast" ? "Breakfast"
+          : meal_period === "lunch" ? "Lunch"
+          : meal_period === "dinner" ? "Dinner"
+          : "Specials"
+        );
         const rawPrice = getVal(row, priceCol).replace(/[^0-9.]/g, "");
         const rawImage = getVal(row, imageCol);
         const resolvedImage = resolveImageUrl(rawImage) || rawImage;
@@ -191,7 +198,7 @@ function parseMenuSheet(buffer: ArrayBuffer): ParsedData {
 
     if (rows.length > 0) {
       const headers = Object.keys(rows[0]);
-      const urlCol = findColumn(headers, ["image_url", "image url", "url", "image", "photo", "photo url", "photo_url", "link", "drive", "src"]);
+      const urlCol = findColumn(headers, ["image_url", "image url", "url", "image", "photo url", "photo_url", "photo", "pic", "picture", "link", "drive", "src", "file", "filename"]);
       const captionCol = findColumn(headers, ["caption", "title", "label", "description", "desc", "name", "alt"]);
 
       for (const row of rows) {

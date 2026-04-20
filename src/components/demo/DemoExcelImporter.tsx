@@ -30,14 +30,14 @@ function getVal(row: Record<string, unknown>, col: string | null): string {
 }
 
 function normalizeCategory(raw: string): string {
-  if (!raw) return "General";
+  if (!raw) return "";
   const trimmed = raw.trim().toLowerCase();
   const exact = [...CATEGORIES].find((c) => c.toLowerCase() === trimmed);
   if (exact) return exact;
   for (const cat of CATEGORIES) {
     if (trimmed.includes(cat.toLowerCase())) return cat;
   }
-  return "General";
+  return "";
 }
 
 function normalizePeriod(raw: string, category?: string): MealPeriod {
@@ -103,8 +103,14 @@ export default function DemoExcelImporter({ open, onClose }: Props) {
           const name = getVal(row, nameCol);
           if (!name) continue;
           const rawCat = getVal(row, categoryCol);
-          const category = normalizeCategory(rawCat);
-          const meal_period = normalizePeriod(getVal(row, periodCol), category);
+          const rawCategory = normalizeCategory(rawCat);
+          const meal_period = normalizePeriod(getVal(row, periodCol), rawCategory);
+          const category = rawCategory || (
+            meal_period === "breakfast" ? "Breakfast"
+            : meal_period === "lunch" ? "Lunch"
+            : meal_period === "dinner" ? "Dinner"
+            : "Specials"
+          );
           createMenuItem({
             name,
             description: getVal(row, descCol),
