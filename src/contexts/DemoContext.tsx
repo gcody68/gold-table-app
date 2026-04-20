@@ -8,6 +8,15 @@ const DEMO_GUEST_ID_KEY = "gilded_demo_guest_id";
 const DEMO_MENU_KEY = "gilded_demo_menu";
 const DEMO_SETTINGS_KEY = "gilded_demo_settings";
 
+export function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function generateGuestId(): string {
   return `guest_${Math.random().toString(36).slice(2, 10)}_${Date.now()}`;
 }
@@ -101,6 +110,7 @@ type DemoContextType = {
   createMenuItem: (item: Omit<MenuItem, "id" | "sort_order" | "is_placeholder">) => void;
   updateMenuItem: (id: string, updates: Partial<MenuItem>) => void;
   deleteMenuItem: (id: string) => void;
+  clearMenuItems: () => void;
   resetDemo: () => void;
   loadSampleMenu: () => void;
   completedSteps: Set<DemoStep>;
@@ -184,6 +194,11 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     triggerSync();
   }, [triggerSync]);
 
+  const clearMenuItems = useCallback(() => {
+    setMenuItems([]);
+    triggerSync();
+  }, [triggerSync]);
+
   const loadSampleMenu = useCallback(() => {
     const fresh = buildDefaultMenuItems();
     setMenuItems(fresh);
@@ -235,6 +250,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       createMenuItem,
       updateMenuItem,
       deleteMenuItem,
+      clearMenuItems,
       resetDemo,
       loadSampleMenu,
       completedSteps,
