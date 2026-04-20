@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import heroPhoneImg from "@/assets/image.png";
 import { Link } from "react-router-dom";
 import { useAdmin } from "@/contexts/AdminContext";
 import { AdminProvider } from "@/contexts/AdminContext";
@@ -237,47 +238,8 @@ function Hero() {
             />
             <div className="absolute inset-[3px] rounded-[41px] overflow-hidden" style={{ background: "#000" }}>
               <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 rounded-b-2xl" style={{ width: 110, height: 28, background: "#111" }} />
-              <div className="absolute top-[28px] left-0 right-0 bottom-0 rounded-b-[38px] overflow-hidden bg-neutral-900 flex flex-col">
-                {/* Simulated app UI */}
-                <div className="px-4 pt-4 pb-2" style={{ background: "#0d1010" }}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: GOLD }}>
-                        <UtensilsCrossed className="w-3 h-3 text-neutral-900" />
-                      </div>
-                      <span className="text-white text-xs font-semibold">Gilded Table</span>
-                    </div>
-                    <div className="text-xs" style={{ color: GOLD }}>Menu</div>
-                  </div>
-                  <div className="text-white text-sm font-bold mb-1">Today's Specials</div>
-                  <div className="text-xs mb-3" style={{ color: "#9ca3af" }}>Fresh & seasonal picks</div>
-                  <div className="flex gap-2 mb-1">
-                    {["All", "Mains", "Sides", "Drinks"].map((t, i) => (
-                      <div key={t} className="text-xs px-2 py-1 rounded-full" style={{ background: i === 0 ? GOLD : "rgba(255,255,255,0.08)", color: i === 0 ? "#111" : "#9ca3af" }}>{t}</div>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex-1 px-3 py-2 space-y-2 overflow-hidden">
-                  {[
-                    { name: "Ribeye Steak", price: "$38", img: "https://images.pexels.com/photos/1639562/pexels-photo-1639562.jpeg?w=120" },
-                    { name: "Salmon Fillet", price: "$26", img: "https://images.pexels.com/photos/3763847/pexels-photo-3763847.jpeg?w=120" },
-                    { name: "Wagyu Burger", price: "$22", img: "https://images.pexels.com/photos/1639565/pexels-photo-1639565.jpeg?w=120" },
-                  ].map((item) => (
-                    <div key={item.name} className="flex items-center gap-2 rounded-xl p-2" style={{ background: "rgba(255,255,255,0.05)" }}>
-                      <img src={item.img} alt={item.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-white text-xs font-medium truncate">{item.name}</div>
-                        <div className="text-xs font-semibold" style={{ color: GOLD }}>{item.price}</div>
-                      </div>
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: GOLD }}>
-                        <span className="text-neutral-900 text-xs font-bold">+</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="px-3 py-2" style={{ background: "rgba(0,0,0,0.4)" }}>
-                  <div className="rounded-xl py-2.5 text-center text-xs font-semibold" style={{ background: GOLD, color: "#111" }}>View Cart (2 items · $64)</div>
-                </div>
+              <div className="absolute top-[28px] left-0 right-0 bottom-0 rounded-b-[38px] overflow-hidden">
+                <img src={heroPhoneImg} alt="Gilded Table Admin Dashboard" className="w-full h-full object-cover object-top" />
               </div>
             </div>
             {/* Side buttons */}
