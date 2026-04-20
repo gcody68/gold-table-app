@@ -51,10 +51,27 @@ export type RestaurantSettings = {
   custom_domain: string | null;
 };
 
-export function useRestaurantSettings() {
+/**
+ * Load restaurant settings. Two modes:
+ *  - Pass restaurantId to load a specific restaurant by ID (public customer view).
+ *  - Pass no argument to load the authenticated user's own restaurant (admin view).
+ */
+export function useRestaurantSettings(restaurantId?: string | null) {
   return useQuery({
-    queryKey: ["restaurant-settings"],
+    queryKey: ["restaurant-settings", restaurantId ?? "owner"],
     queryFn: async () => {
+      // Public view: load by explicit ID resolved from subdomain/domain
+      if (restaurantId) {
+        const { data, error } = await supabase
+          .from("restaurant_settings")
+          .select("*")
+          .eq("id", restaurantId)
+          .maybeSingle();
+        if (error) throw error;
+        return data as RestaurantSettings | null;
+      }
+
+      // Admin view: load the authenticated owner's restaurant
       const { data: { session } } = await supabase.auth.getSession();
       const isSuperAdmin = session?.user?.app_metadata?.super_admin === true;
       let query = supabase.from("restaurant_settings").select("*");

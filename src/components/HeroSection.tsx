@@ -4,8 +4,8 @@ import { MapPin, Phone, CirclePlay as PlayCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAdmin } from "@/contexts/AdminContext";
 
-export default function HeroSection() {
-  const { data: settings } = useRestaurantSettings();
+export default function HeroSection({ restaurantId }: { restaurantId?: string | null }) {
+  const { data: settings } = useRestaurantSettings(restaurantId);
   const { isAdmin } = useAdmin();
   const heroImage = settings?.header_image_url || heroDefault;
 

@@ -12,9 +12,9 @@ import { toast } from "sonner";
 
 type Step = "cart" | "checkout" | "payment" | "confirmation";
 
-export default function CartSidebar() {
+export default function CartSidebar({ restaurantId }: { restaurantId?: string | null }) {
   const { items, updateQuantity, removeItem, clearCart, total, isOpen, setIsOpen, customerInfo, setCustomerInfo } = useCart();
-  const { data: settings } = useRestaurantSettings();
+  const { data: settings } = useRestaurantSettings(restaurantId);
   const [step, setStep] = useState<Step>("cart");
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");

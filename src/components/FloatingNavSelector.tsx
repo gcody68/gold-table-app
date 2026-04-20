@@ -11,12 +11,12 @@ const CATEGORY_TO_PERIOD: Record<string, MealPeriod> = {
   Dinner: "dinner",
 };
 
-export default function FloatingNavSelector() {
-  const { data: items } = useMenuItems();
+export default function FloatingNavSelector({ restaurantId }: { restaurantId?: string | null }) {
+  const { data: items } = useMenuItems(restaurantId);
   const { items: cartItems, setIsOpen } = useCart();
-  const { data: settings } = useRestaurantSettings();
+  const { data: settings } = useRestaurantSettings(restaurantId);
   const { isAdmin } = useAdmin();
-  const { currentPeriod, isPeriodActive } = useMealPeriodConfig();
+  const { currentPeriod, isPeriodActive } = useMealPeriodConfig(restaurantId);
 
   const categoriesWithItems = CATEGORIES.filter((cat) => {
     const hasItems = (items || []).some((i) => i.category === cat);

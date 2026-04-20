@@ -149,10 +149,11 @@ export default function AdminPanel() {
   };
 
   const handleClearDemo = async () => {
+    if (!settings?.id) return;
     setClearing(true);
     try {
-      await supabase.from("menu_items").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("gallery_items").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabase.from("menu_items").delete().eq("restaurant_id", settings.id);
+      await supabase.from("gallery_items").delete().eq("restaurant_id", settings.id);
       qc.invalidateQueries({ queryKey: ["menu-items"] });
       qc.invalidateQueries({ queryKey: ["gallery-items"] });
       toast.success("All data cleared!");
@@ -164,8 +165,13 @@ export default function AdminPanel() {
   };
 
   const handleSeedDemo = async () => {
+    if (!settings?.id) return;
     try {
-      const items = STARTER_ITEMS.map((item) => ({ ...item, is_placeholder: false }));
+      const items = STARTER_ITEMS.map((item) => ({
+        ...item,
+        is_placeholder: false,
+        restaurant_id: settings.id,
+      }));
       await supabase.from("menu_items").insert(items);
       qc.invalidateQueries({ queryKey: ["menu-items"] });
       toast.success("Demo items added!");

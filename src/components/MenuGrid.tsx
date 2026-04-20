@@ -103,15 +103,15 @@ function AddToOrderButton({
   );
 }
 
-export default function MenuGrid() {
-  const { data: items, isLoading } = useMenuItems();
+export default function MenuGrid({ restaurantId }: { restaurantId?: string | null }) {
+  const { data: items, isLoading } = useMenuItems(restaurantId);
   const { isAdmin } = useAdmin();
   const { setPendingItem, pendingItem } = useCart();
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [creatingCategory, setCreatingCategory] = useState<string | null>(null);
   const [lightboxItem, setLightboxItem] = useState<{ src: string; caption: string | null } | null>(null);
 
-  const { currentPeriod, unavailableDisplay, getPeriodStatus, isPeriodActive } = useMealPeriodConfig();
+  const { currentPeriod, unavailableDisplay, getPeriodStatus, isPeriodActive } = useMealPeriodConfig(restaurantId);
 
   const handleAddToCart = (e: React.MouseEvent, item: MenuItem) => {
     e.stopPropagation();

@@ -5,11 +5,11 @@ import { Settings, Shield, Sun, Moon } from "lucide-react";
 import { useState } from "react";
 import AdminLoginModal from "./AdminLoginModal";
 
-type Props = { showAdmin: boolean; onToggleAdmin: () => void };
+type Props = { showAdmin?: boolean; onToggleAdmin?: () => void; restaurantId?: string | null };
 
-export default function AppNavbar({ showAdmin, onToggleAdmin }: Props) {
+export default function AppNavbar({ showAdmin, onToggleAdmin, restaurantId }: Props) {
   const { isAdmin } = useAdmin();
-  const { data: settings } = useRestaurantSettings();
+  const { data: settings } = useRestaurantSettings(restaurantId);
   const { isLight, toggle: toggleLight } = useLightMode();
   const [loginOpen, setLoginOpen] = useState(false);
 

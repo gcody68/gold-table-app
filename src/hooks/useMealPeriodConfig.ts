@@ -56,8 +56,8 @@ export type MealPeriodConfig = {
   isPeriodActive: (period: MealPeriod) => boolean;
 };
 
-export function useMealPeriodConfig(): MealPeriodConfig {
-  const { data: settings } = useRestaurantSettings();
+export function useMealPeriodConfig(restaurantId?: string | null): MealPeriodConfig {
+  const { data: settings } = useRestaurantSettings(restaurantId);
 
   return useMemo(() => {
     const serviceHours: ServiceHours = settings?.service_hours ?? DEFAULT_SERVICE_HOURS;

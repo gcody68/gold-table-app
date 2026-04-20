@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { AdminProvider, useAdmin } from "@/contexts/AdminContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { useRestaurantSettings } from "@/hooks/useRestaurantSettings";
+import { useRestaurant } from "@/contexts/RestaurantContext";
 import { applyTheme, getThemeById } from "@/lib/themes";
 import { applyBgStyle, getBgStyleById } from "@/components/BackgroundStyleSelector";
 import AppNavbar from "@/components/AppNavbar";
@@ -15,8 +16,9 @@ import FloatingNavSelector from "@/components/FloatingNavSelector";
 
 function AppContent() {
   const { isAdmin } = useAdmin();
+  const { restaurantId } = useRestaurant();
+  const { data: settings } = useRestaurantSettings(restaurantId);
   const [showAdmin, setShowAdmin] = useState(false);
-  const { data: settings } = useRestaurantSettings();
 
   useEffect(() => {
     if (settings) {
@@ -27,14 +29,14 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppNavbar showAdmin={showAdmin} onToggleAdmin={() => setShowAdmin(!showAdmin)} />
+      <AppNavbar restaurantId={restaurantId} showAdmin={showAdmin} onToggleAdmin={() => setShowAdmin((v) => !v)} />
       {isAdmin && showAdmin && <AdminPanel />}
-      <HeroSection />
-      <MenuGrid />
-      <GallerySection />
-<CartFAB />
-      <CartSidebar />
-      <FloatingNavSelector />
+      <HeroSection restaurantId={restaurantId} />
+      <MenuGrid restaurantId={restaurantId} />
+      <GallerySection restaurantId={restaurantId} />
+      <CartFAB />
+      <CartSidebar restaurantId={restaurantId} />
+      <FloatingNavSelector restaurantId={restaurantId} />
       <footer className="border-t border-border py-8 text-center">
         <p className="text-muted-foreground text-xs">
           &copy; {new Date().getFullYear()} · Powered by love for great food

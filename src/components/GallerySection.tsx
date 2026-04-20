@@ -6,8 +6,8 @@ import ImageLightbox from "./ImageLightbox";
 import { ZoomIn } from "lucide-react";
 import { resolveImageUrl } from "@/lib/utils";
 
-export default function GallerySection() {
-  const { data: items, isLoading } = useGalleryItems();
+export default function GallerySection({ restaurantId }: { restaurantId?: string | null }) {
+  const { data: items, isLoading } = useGalleryItems(restaurantId);
   const { isAdmin } = useAdmin();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
