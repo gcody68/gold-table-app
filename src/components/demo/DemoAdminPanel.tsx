@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { useDemo, readFileAsDataUrl } from "@/contexts/DemoContext";
+import { useState } from "react";
+import { useDemo } from "@/contexts/DemoContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,8 +11,8 @@ import BackgroundStyleSelector, { type BgStyleId, applyBgStyle, getBgStyleById }
 import { type ThemeId, applyTheme, getThemeById } from "@/lib/themes";
 import { toast } from "sonner";
 import {
-  Save, ImagePlus, Loader as Loader2, Settings, Clock, FileSpreadsheet,
-  CreditCard, Monitor, Globe, Sparkles, Trash2, Lock, X, KeyRound,
+  Save, Loader as Loader2, Settings, Clock, FileSpreadsheet,
+  CreditCard, Monitor, Globe, Trash2, Lock, KeyRound,
 } from "lucide-react";
 import ServiceHoursTab from "@/components/ServiceHoursTab";
 import { type ServiceHours, type BusinessHours, DEFAULT_SERVICE_HOURS, DEFAULT_BUSINESS_HOURS } from "@/hooks/useRestaurantSettings";
@@ -21,6 +21,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { STARTER_ITEMS } from "@/components/StarterContent";
+import DemoImagePicker from "./DemoImagePicker";
 
 export default function DemoAdminPanel() {
   const { settings, updateSettings, loadSampleMenu, menuItems, resetDemo, createMenuItem, clearMenuItems } = useDemo();
@@ -36,14 +37,9 @@ export default function DemoAdminPanel() {
   const [serviceHours, setServiceHours] = useState<ServiceHours>(settings.service_hours ?? DEFAULT_SERVICE_HOURS);
   const [businessHours, setBusinessHours] = useState<BusinessHours>(settings.business_hours ?? DEFAULT_BUSINESS_HOURS);
   const [unavailableDisplay, setUnavailableDisplay] = useState<"hide" | "gray">(settings.unavailable_display ?? "hide");
-  const [uploadingHeader, setUploadingHeader] = useState(false);
-  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [loadingMenu, setLoadingMenu] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [initialized, setInitialized] = useState(false);
-
-  const headerFileRef = useRef<HTMLInputElement>(null);
-  const logoFileRef = useRef<HTMLInputElement>(null);
 
   if (!initialized) {
     setName(settings.business_name);
@@ -70,36 +66,6 @@ export default function DemoAdminPanel() {
     setBgStyle(id);
     applyBgStyle(getBgStyleById(id));
     applyTheme(getThemeById(theme));
-  };
-
-  const handleHeaderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingHeader(true);
-    try {
-      const dataUrl = await readFileAsDataUrl(file);
-      setHeaderUrl(dataUrl);
-    } catch {
-      toast.error("Failed to read image");
-    } finally {
-      setUploadingHeader(false);
-      e.target.value = "";
-    }
-  };
-
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingLogo(true);
-    try {
-      const dataUrl = await readFileAsDataUrl(file);
-      setLogoUrl(dataUrl);
-    } catch {
-      toast.error("Failed to read image");
-    } finally {
-      setUploadingLogo(false);
-      e.target.value = "";
-    }
   };
 
   const handleSave = () => {
@@ -195,67 +161,23 @@ export default function DemoAdminPanel() {
               </div>
 
               {/* Logo */}
-              <div>
-                <Label className="text-muted-foreground text-xs">Business Logo</Label>
-                <p className="text-xs text-muted-foreground mb-1">Displayed in the navbar and order confirmation. If none, business name is shown.</p>
-                <div className="flex items-center gap-3 mt-1">
-                  <div
-                    onClick={() => logoFileRef.current?.click()}
-                    className="w-24 h-24 rounded-lg bg-secondary border-2 border-dashed border-border hover:border-gold/40 cursor-pointer flex items-center justify-center overflow-hidden transition-colors flex-shrink-0"
-                  >
-                    {uploadingLogo ? (
-                      <Loader2 className="w-5 h-5 text-gold animate-spin" />
-                    ) : logoUrl ? (
-                      <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-1" />
-                    ) : (
-                      <div className="flex flex-col items-center gap-1 text-muted-foreground">
-                        <ImagePlus className="w-5 h-5" />
-                        <span className="text-xs">Logo</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <button
-                      type="button"
-                      onClick={() => logoFileRef.current?.click()}
-                      className="text-xs text-gold hover:text-gold/80 underline underline-offset-2 transition-colors text-left"
-                    >
-                      Upload Business Logo
-                    </button>
-                    {logoUrl && (
-                      <button
-                        type="button"
-                        onClick={() => setLogoUrl("")}
-                        className="text-xs text-muted-foreground hover:text-destructive transition-colors text-left"
-                      >
-                        Remove logo
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <input ref={logoFileRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-              </div>
+              <DemoImagePicker
+                value={logoUrl}
+                onChange={setLogoUrl}
+                aspectClass="aspect-square max-w-[160px]"
+                label="Business Logo"
+                hint="Displayed in the navbar and order confirmation. If none, business name is shown."
+                objectFit="contain"
+              />
 
               {/* Header image */}
-              <div>
-                <Label className="text-muted-foreground text-xs">Header Image</Label>
-                <div
-                  onClick={() => headerFileRef.current?.click()}
-                  className="mt-1 h-32 rounded-lg bg-secondary border-2 border-dashed border-border hover:border-gold/40 cursor-pointer flex items-center justify-center overflow-hidden transition-colors"
-                >
-                  {uploadingHeader ? (
-                    <Loader2 className="w-6 h-6 text-gold animate-spin" />
-                  ) : headerUrl ? (
-                    <img src={headerUrl} alt="Header" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="flex flex-col items-center gap-1 text-muted-foreground">
-                      <ImagePlus className="w-6 h-6" />
-                      <span className="text-xs">Upload Header Image</span>
-                    </div>
-                  )}
-                </div>
-                <input ref={headerFileRef} type="file" accept="image/*" className="hidden" onChange={handleHeaderUpload} />
-              </div>
+              <DemoImagePicker
+                value={headerUrl}
+                onChange={setHeaderUrl}
+                aspectClass="h-36"
+                label="Header Image"
+                objectFit="cover"
+              />
 
               {/* Gallery toggle */}
               <div className="flex items-center justify-between py-2 border border-border rounded-lg px-4">

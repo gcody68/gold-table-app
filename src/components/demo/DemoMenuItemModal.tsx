@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { CATEGORIES, MEAL_PERIODS, type MenuItem, type MealPeriod } from "@/hooks/useMenuItems";
 import { useDemo } from "@/contexts/DemoContext";
-import { ImagePlus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import DemoImagePicker from "./DemoImagePicker";
 
 type Props =
   | { item: MenuItem; category?: never; onClose: () => void }
@@ -43,6 +44,7 @@ export default function DemoMenuItemModal(props: Props) {
       meal_period: mealPeriod,
       is_available: isAvailable,
       daily_stock: parsedStock,
+      restaurant_id: null as string | null,
     };
 
     if (isNew) {
@@ -71,26 +73,12 @@ export default function DemoMenuItemModal(props: Props) {
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="w-full aspect-[4/3] rounded-lg bg-secondary border-2 border-dashed border-border flex items-center justify-center overflow-hidden">
-            {imageUrl ? (
-              <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
-            ) : (
-              <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                <ImagePlus className="w-8 h-8" />
-                <span className="text-xs">Enter image URL below</span>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <Label className="text-muted-foreground text-xs">Image URL</Label>
-            <Input
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://..."
-              className="bg-secondary border-border"
-            />
-          </div>
+          <DemoImagePicker
+            value={imageUrl}
+            onChange={setImageUrl}
+            aspectClass="aspect-[4/3]"
+            objectFit="cover"
+          />
 
           <div className="grid grid-cols-2 gap-3">
             <div>
