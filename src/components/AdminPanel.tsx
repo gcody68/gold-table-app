@@ -222,10 +222,8 @@ export default function AdminPanel({ restaurantId }: Props) {
                 const shopUrl = id
                   ? `${window.location.origin}/?test_res_id=${id}`
                   : window.location.origin;
-                const kitchenUrl = id
-                  ? `${window.location.origin}/kitchen?res_id=${id}`
-                  : `${window.location.origin}/kitchen`;
-                // Open shop first (direct user gesture), then kitchen via link click
+                // Kitchen resolves via session — no res_id param needed
+                const kitchenUrl = `${window.location.origin}/kitchen`;
                 window.open(shopUrl, "_blank");
                 const a = document.createElement("a");
                 a.href = kitchenUrl;

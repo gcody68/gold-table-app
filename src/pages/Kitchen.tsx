@@ -197,18 +197,10 @@ function KitchenBoard() {
   const [loginOpen, setLoginOpen] = useState(!isAdmin);
   const qc = useQueryClient();
 
-  // Prefer the res_id URL param (set by "Open My Shop"), fall back to owner_id lookup.
+  // Always resolve via the logged-in owner — never trust a URL param for kitchen auth.
   const { data: restaurant, isLoading: restaurantLoading } = useQuery({
-    queryKey: ["kitchen-restaurant", urlResId ?? session?.user?.id],
+    queryKey: ["kitchen-restaurant", session?.user?.id],
     queryFn: async () => {
-      if (urlResId) {
-        const { data } = await supabase
-          .from("restaurant_settings")
-          .select("id, business_name, business_hours")
-          .eq("id", urlResId)
-          .maybeSingle();
-        return data ?? null;
-      }
       if (!session?.user?.id) return null;
       const { data } = await supabase
         .from("restaurant_settings")
@@ -217,7 +209,7 @@ function KitchenBoard() {
         .maybeSingle();
       return data ?? null;
     },
-    enabled: !!urlResId || !!session?.user?.id,
+    enabled: !!session?.user?.id,
     staleTime: 5 * 60 * 1000,
   });
 
