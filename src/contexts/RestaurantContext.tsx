@@ -37,10 +37,21 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   const { data: resolution, isLoading } = useQuery({
     queryKey: ["restaurant-resolution", slug],
     queryFn: async (): Promise<RestaurantResolution> => {
-      // No subdomain — check for a hardcoded fallback restaurant ID (e.g. Bolt/Vercel previews)
+      // No subdomain — check env var fallback first (e.g. Bolt/Vercel previews),
+      // then try to find any restaurant with a null/empty subdomain as last resort.
       if (slug === null) {
         const fallbackId = import.meta.env.VITE_RESTAURANT_ID;
         if (fallbackId) return { status: "found", restaurantId: fallbackId };
+
+        // Auto-detect: load the first restaurant available (single-tenant fallback)
+        const { data } = await supabase
+          .from("restaurant_settings")
+          .select("id")
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (data?.id) return { status: "found", restaurantId: data.id };
+
         return { status: "root" };
       }
 
