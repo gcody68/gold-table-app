@@ -134,8 +134,9 @@ function DashboardContent() {
   const [businessHours, setBusinessHours] = useState<BusinessHours>(DEFAULT_BUSINESS_HOURS);
   const [unavailableDisplay, setUnavailableDisplay] = useState<"hide" | "gray">("hide");
 
-  // Menu management
-  const { data: menuItems } = useMenuItems(restaurantId);
+  // Menu management — use settings.id once loaded so the query key is stable
+  const menuRestaurantId = settings?.id ?? restaurantId;
+  const { data: menuItems } = useMenuItems(menuRestaurantId);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [addingItemCategory, setAddingItemCategory] = useState<string | null>(null);
 
@@ -238,7 +239,8 @@ function DashboardContent() {
       if (menuErr) throw new Error(menuErr.message);
       const { error: galleryErr } = await supabase.from("gallery_items").delete().eq("restaurant_id", settings.id);
       if (galleryErr) throw new Error(galleryErr.message);
-      qc.invalidateQueries({ queryKey: ["menu-items"] });
+      await qc.invalidateQueries({ queryKey: ["menu-items"] });
+      await qc.refetchQueries({ queryKey: ["menu-items"] });
       qc.invalidateQueries({ queryKey: ["gallery-items"] });
       toast.success("All data cleared!");
     } catch (err) {
@@ -249,17 +251,27 @@ function DashboardContent() {
   };
 
   const handleSeedDemo = async () => {
-    if (!settings?.id) return;
+    if (!settings?.id) { toast.error("Restaurant not loaded — try again."); return; }
     try {
-      const items = STARTER_ITEMS.map((item) => ({
-        ...item,
-        is_placeholder: false,
-        restaurant_id: settings.id,
-      }));
-      const { error } = await supabase.from("menu_items").insert(items);
+      // Check for existing items to avoid duplicates
+      const { data: existing } = await supabase
+        .from("menu_items")
+        .select("name")
+        .eq("restaurant_id", settings.id);
+      const existingNames = new Set((existing ?? []).map((i) => i.name));
+      const newItems = STARTER_ITEMS
+        .filter((item) => !existingNames.has(item.name))
+        .map((item) => ({ ...item, is_placeholder: false, restaurant_id: settings.id }));
+
+      if (newItems.length === 0) {
+        toast.info("Demo items are already loaded.");
+        return;
+      }
+      const { error } = await supabase.from("menu_items").insert(newItems);
       if (error) throw new Error(error.message);
-      qc.invalidateQueries({ queryKey: ["menu-items"] });
-      toast.success("Demo items added!");
+      await qc.invalidateQueries({ queryKey: ["menu-items"] });
+      await qc.refetchQueries({ queryKey: ["menu-items"] });
+      toast.success(`${newItems.length} demo items added!`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to load demo items");
     }

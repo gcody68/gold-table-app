@@ -301,7 +301,8 @@ async function importData(data: ParsedData, qc: ReturnType<typeof useQueryClient
     const { error } = await supabase.from("menu_items").insert(items);
     if (error) throw new Error(`Menu import failed: ${error.message}`);
     totalImported += items.length;
-    qc.invalidateQueries({ queryKey: ["menu-items"] });
+    await qc.invalidateQueries({ queryKey: ["menu-items"] });
+    await qc.refetchQueries({ queryKey: ["menu-items"] });
   }
 
   if (data.galleryItems.length > 0) {
