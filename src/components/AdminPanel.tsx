@@ -219,10 +219,12 @@ export default function AdminPanel({ restaurantId }: Props) {
               size="sm"
               onClick={() => {
                 const id = settings?.id ?? restaurantId;
-                const url = id
+                const shopUrl = id
                   ? `${window.location.origin}/?test_res_id=${id}`
                   : window.location.origin;
-                window.open(url, "_blank");
+                const kitchenUrl = `${window.location.origin}/kitchen`;
+                window.open(shopUrl, "_blank");
+                window.open(kitchenUrl, "_blank");
               }}
               className="text-muted-foreground hover:text-foreground"
             >
