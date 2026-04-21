@@ -198,12 +198,14 @@ function KitchenBoard() {
   const businessHours = settings?.business_hours ?? null;
 
   const { data: orders, isLoading } = useQuery({
-    queryKey: ["kitchen-orders", businessHours],
+    queryKey: ["kitchen-orders", settings?.id, businessHours],
     queryFn: async () => {
+      if (!settings?.id) return [];
       const { start } = getBusinessDayWindow(businessHours);
       const { data, error } = await supabase
         .from("orders")
         .select("*, order_items(*)")
+        .eq("restaurant_id", settings.id)
         .eq("status", "pending")
         .gte("created_at", start.toISOString())
         .order("created_at", { ascending: true });
@@ -211,7 +213,7 @@ function KitchenBoard() {
       return data as OrderWithItems[];
     },
     refetchInterval: 5000,
-    enabled: isAdmin,
+    enabled: isAdmin && !!settings?.id,
   });
 
   const markReady = useMutation({

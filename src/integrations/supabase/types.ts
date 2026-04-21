@@ -175,7 +175,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      place_order: {
+        Args: {
+          p_restaurant_id: string
+          p_customer_name: string
+          p_customer_phone: string
+          p_customer_email?: string | null
+          p_total?: number
+          p_items?: Array<{
+            menu_item_id: string
+            menu_item_name: string
+            price: number
+            quantity: number
+            special_instructions?: string | null
+          }>
+        }
+        Returns: string
+      }
+      upsert_customer_lead: {
+        Args: {
+          p_name: string
+          p_phone: string
+          p_email?: string | null
+        }
+        Returns: void
+      }
     }
     Enums: {
       [_ in never]: never

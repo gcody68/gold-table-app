@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { uploadImage } from "@/hooks/useImageUpload";
 import { toast } from "sonner";
-import { Save, ImagePlus, Loader as Loader2, X, Trash2, CreditCard, Settings, Monitor, FileSpreadsheet, KeyRound, Clock, Globe } from "lucide-react";
+import { Save, ImagePlus, Loader as Loader2, X, Trash2, CreditCard, Settings, Monitor, FileSpreadsheet, KeyRound, Clock, Globe, ExternalLink } from "lucide-react";
 import { useAdmin } from "@/contexts/AdminContext";
 import { useDemoMode } from "@/contexts/DemoModeContext";
 import ThemeSelector from "@/components/ThemeSelector";
@@ -214,6 +214,14 @@ export default function AdminPanel({ restaurantId }: Props) {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-serif font-bold text-gold">Admin Dashboard</h2>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.open(window.location.origin, "_blank")}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <ExternalLink className="w-4 h-4 mr-1" /> Preview Shop
+            </Button>
             <Button
               variant="ghost"
               size="sm"

@@ -75,32 +75,25 @@ export default function CartSidebar({ restaurantId }: { restaurantId?: string | 
         return;
       }
 
-      const rid = settings?.id ?? null;
-      const { data: order, error: orderErr } = await supabase
-        .from("orders")
-        .insert({
-          customer_name: customerInfo.name.trim(),
-          customer_phone: customerInfo.phone.trim(),
-          customer_email: customerInfo.email.trim() || null,
-          total,
-          status: "pending",
-          restaurant_id: rid,
-        })
-        .select("id")
-        .maybeSingle();
-      if (orderErr) throw orderErr;
-      if (!order) throw new Error("Order was not created");
+      if (!restaurantId) throw new Error("Restaurant not identified. Please refresh and try again.");
 
       const orderItems = items.map((i) => ({
-        order_id: order.id,
         menu_item_id: i.menuItem.id,
         menu_item_name: i.menuItem.name,
         price: Number(i.menuItem.price),
         quantity: i.quantity,
         special_instructions: i.specialInstructions || null,
       }));
-      const { error: itemsErr } = await supabase.from("order_items").insert(orderItems);
-      if (itemsErr) throw itemsErr;
+
+      const { error: orderErr } = await supabase.rpc("place_order", {
+        p_restaurant_id: restaurantId,
+        p_customer_name: customerInfo.name.trim(),
+        p_customer_phone: customerInfo.phone.trim(),
+        p_customer_email: customerInfo.email.trim() || null,
+        p_total: total,
+        p_items: orderItems,
+      });
+      if (orderErr) throw orderErr;
 
       await upsertCustomerLead();
 
