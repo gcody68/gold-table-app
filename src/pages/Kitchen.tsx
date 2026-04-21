@@ -194,28 +194,100 @@ function KitchenBoard() {
   const { isAdmin, session } = useAdmin();
   const [loginOpen, setLoginOpen] = useState(!isAdmin);
   const qc = useQueryClient();
-  const { data: settings, isLoading: settingsLoading } = useRestaurantSettings();
-  const businessHours = settings?.business_hours ?? null;
-  const restaurantId = settings?.id ?? null;
-  const restaurantName = settings?.business_name ?? null;
 
-  // Debug: log the restaurant context so we can diagnose blank kitchen views
-  useEffect(() => {
-    console.log("[Kitchen] session uid:", session?.user?.id ?? "none");
-    console.log("[Kitchen] restaurant_id:", restaurantId ?? "not resolved yet");
-    console.log("[Kitchen] restaurant_name:", restaurantName ?? "not resolved yet");
-  }, [session?.user?.id, restaurantId, restaurantName]);
-
-  const { data: orders, isLoading: ordersLoading } = useQuery({
-    queryKey: ["kitchen-orders", restaurantId, businessHours],
+  // 1. URL-based restaurant: resolve from subdomain/hostname (same logic as RestaurantContext)
+  const { data: urlRestaurant, isLoading: urlLoading } = useQuery({
+    queryKey: ["kitchen-url-restaurant"],
     queryFn: async () => {
-      if (!restaurantId) return [];
+      const hostname = window.location.hostname;
+      const SUBDOMAIN_HOST = "gildedtable.com";
+      let slug: string | null = null;
+      if (hostname.endsWith(`.${SUBDOMAIN_HOST}`)) {
+        slug = hostname.slice(0, -(SUBDOMAIN_HOST.length + 1));
+      }
+
+      if (slug) {
+        const isLikelySubdomain = !slug.includes(".");
+        const col = isLikelySubdomain ? "subdomain" : "custom_domain";
+        const { data } = await supabase
+          .from("restaurant_settings")
+          .select("id, business_name")
+          .eq(col, slug)
+          .maybeSingle();
+        return data ?? null;
+      }
+
+      // No subdomain — check env var fallback
+      const fallbackId = import.meta.env.VITE_RESTAURANT_ID;
+      if (fallbackId) {
+        const { data } = await supabase
+          .from("restaurant_settings")
+          .select("id, business_name")
+          .eq("id", fallbackId)
+          .maybeSingle();
+        return data ?? null;
+      }
+
+      // Last resort: first restaurant (single-tenant / local dev)
+      const { data } = await supabase
+        .from("restaurant_settings")
+        .select("id, business_name")
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      return data ?? null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // 2. Admin-owned restaurant: resolve from logged-in user's owner_id
+  const { data: adminRestaurant, isLoading: adminLoading } = useQuery({
+    queryKey: ["kitchen-admin-restaurant", session?.user?.id],
+    queryFn: async () => {
+      if (!session?.user?.id) return null;
+      const isSuperAdmin = session.user.app_metadata?.super_admin === true;
+      if (isSuperAdmin) return null; // super admin can see any restaurant
+      const { data } = await supabase
+        .from("restaurant_settings")
+        .select("id, business_name, business_hours")
+        .eq("owner_id", session.user.id)
+        .maybeSingle();
+      return data ?? null;
+    },
+    enabled: !!session?.user?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const isSuperAdmin = session?.user?.app_metadata?.super_admin === true;
+
+  // 3. Security check: URL restaurant must match admin's restaurant (unless super admin)
+  const urlId = urlRestaurant?.id ?? null;
+  const adminId = adminRestaurant?.id ?? null;
+  const isLoading = urlLoading || adminLoading;
+
+  // Verified ID: the one we'll actually query with
+  const verifiedId = isSuperAdmin
+    ? urlId  // super admin uses URL to choose which kitchen to view
+    : (adminId && urlId && adminId === urlId) ? adminId
+    : (adminId && !urlId) ? adminId  // no subdomain context — trust admin's own restaurant
+    : null;
+
+  const isAuthorized = isSuperAdmin || !adminId || !urlId || adminId === urlId;
+
+  const businessHours = (adminRestaurant?.business_hours ?? null) as import("@/hooks/useRestaurantSettings").BusinessHours | null;
+  const restaurantName = (isSuperAdmin ? urlRestaurant?.business_name : adminRestaurant?.business_name) ?? null;
+
+  // 4. Orders fetch — uses verifiedId only
+  const { data: orders, isLoading: ordersLoading } = useQuery({
+    queryKey: ["kitchen-orders", verifiedId, businessHours],
+    queryFn: async () => {
+      if (!verifiedId) return [];
       const { start } = getBusinessDayWindow(businessHours);
-      console.log("[Kitchen] fetching orders for restaurant_id:", restaurantId, "since:", start.toISOString());
+      console.log("[Kitchen] fetching orders for restaurant_id:", verifiedId, "since:", start.toISOString());
       const { data, error } = await supabase
         .from("orders")
         .select("*, order_items(*)")
-        .eq("restaurant_id", restaurantId)
+        .eq("restaurant_id", verifiedId)
         .eq("status", "pending")
         .gte("created_at", start.toISOString())
         .order("created_at", { ascending: true });
@@ -227,26 +299,26 @@ function KitchenBoard() {
       return data as OrderWithItems[];
     },
     refetchInterval: 10000,
-    enabled: isAdmin && !!restaurantId,
+    enabled: isAdmin && !!verifiedId && isAuthorized,
   });
 
-  // Realtime subscription — filtered by restaurant_id
+  // 5. Realtime subscription — filtered by verifiedId
   useEffect(() => {
-    if (!restaurantId) return;
+    if (!verifiedId || !isAuthorized) return;
 
     const channel = supabase
-      .channel(`kitchen-orders-${restaurantId}`)
+      .channel(`kitchen-orders-${verifiedId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "orders",
-          filter: `restaurant_id=eq.${restaurantId}`,
+          filter: `restaurant_id=eq.${verifiedId}`,
         },
         (payload) => {
           console.log("[Kitchen] realtime new order:", payload.new);
-          qc.invalidateQueries({ queryKey: ["kitchen-orders", restaurantId] });
+          qc.invalidateQueries({ queryKey: ["kitchen-orders", verifiedId] });
           toast("New order received!", { description: `From ${(payload.new as { customer_name?: string }).customer_name ?? "customer"}` });
         }
       )
@@ -256,20 +328,18 @@ function KitchenBoard() {
           event: "UPDATE",
           schema: "public",
           table: "orders",
-          filter: `restaurant_id=eq.${restaurantId}`,
+          filter: `restaurant_id=eq.${verifiedId}`,
         },
         () => {
-          qc.invalidateQueries({ queryKey: ["kitchen-orders", restaurantId] });
+          qc.invalidateQueries({ queryKey: ["kitchen-orders", verifiedId] });
         }
       )
       .subscribe((status) => {
         console.log("[Kitchen] realtime channel status:", status);
       });
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [restaurantId, qc]);
+    return () => { supabase.removeChannel(channel); };
+  }, [verifiedId, isAuthorized, qc]);
 
   const markReady = useMutation({
     mutationFn: async (orderId: string) => {
@@ -280,7 +350,7 @@ function KitchenBoard() {
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["kitchen-orders", restaurantId] });
+      qc.invalidateQueries({ queryKey: ["kitchen-orders", verifiedId] });
       toast.success("Order marked as ready!");
     },
   });
@@ -301,7 +371,24 @@ function KitchenBoard() {
     );
   }
 
-  const isLoading = settingsLoading || ordersLoading;
+  // Unauthorized: URL restaurant exists but doesn't match the logged-in admin
+  if (!isLoading && !isAuthorized) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 text-center px-4">
+        <ChefHat className="w-14 h-14 text-destructive mx-auto" />
+        <h1 className="text-2xl font-serif font-bold text-foreground">Unauthorized Access</h1>
+        <p className="text-muted-foreground text-sm max-w-sm">
+          You are logged in as the admin of <span className="text-foreground font-semibold">{adminRestaurant?.business_name}</span>, but this URL belongs to a different restaurant.
+        </p>
+        <div className="text-xs text-muted-foreground bg-secondary rounded-lg px-4 py-3 font-mono space-y-1 text-left">
+          <div>URL Restaurant: <span className="text-destructive">{urlId ?? "none"}</span></div>
+          <div>Your Restaurant: <span className="text-gold">{adminId ?? "none"}</span></div>
+        </div>
+      </div>
+    );
+  }
+
+  const allLoading = isLoading || ordersLoading;
 
   return (
     <div className="min-h-screen bg-background">
@@ -320,20 +407,25 @@ function KitchenBoard() {
         </div>
       </header>
 
-      {/* Diagnostic identity bar */}
-      <div className={`border-b px-4 py-2 text-center text-xs ${restaurantName ? "bg-green-950/40 border-green-800/30 text-green-400" : "bg-amber-950/40 border-amber-800/30 text-amber-400"}`}>
-        {settingsLoading
-          ? "Resolving restaurant identity…"
-          : restaurantName
-            ? <>Live orders for: <span className="font-semibold">{restaurantName}</span> <span className="opacity-50">(id: {restaurantId})</span></>
-            : "Restaurant not identified — check that your account has a restaurant linked"
-        }
+      {/* Debug identity bar */}
+      <div className="border-b border-border bg-secondary/60 px-4 py-2 font-mono text-xs">
+        <div className="container flex flex-wrap gap-x-6 gap-y-1">
+          <span className="text-muted-foreground">
+            URL Restaurant: <span className={urlId ? "text-foreground" : "text-amber-400"}>{isLoading ? "…" : (urlId ?? "none")}</span>
+          </span>
+          <span className="text-muted-foreground">
+            Logged-in Restaurant: <span className={adminId ? "text-foreground" : "text-amber-400"}>{isLoading ? "…" : (adminId ?? "none")}</span>
+          </span>
+          <span className="text-muted-foreground">
+            Connection: {isLoading ? <span className="text-muted-foreground">…</span> : isAuthorized && verifiedId ? <span className="text-green-400 font-semibold">Connected — {restaurantName}</span> : <span className="text-red-400 font-semibold">Mismatched</span>}
+          </span>
+        </div>
       </div>
 
       <KitchenAnalyticsBar businessHours={businessHours} />
 
       <div className="container py-6">
-        {isLoading ? (
+        {allLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-48 rounded-lg bg-secondary animate-pulse" />
