@@ -1,31 +1,203 @@
-const IMG = "/demo-images";
+import type { MealPeriod } from "@/hooks/useMenuItems";
 
-export const STARTER_ITEMS = [
-  // === BREAKFAST (6) ===
-  { name: "Eggs Benedict", description: "Poached eggs on toasted English muffin with Canadian bacon and house hollandaise sauce.", price: 15.00, category: "Breakfast", image_url: `${IMG}/httpsimages.fake-cafe.comeggs-benny.jpg.png`, sort_order: 1 },
-  { name: "Avocado Toast", description: "Smashed avocado on sourdough with chili flakes, poached egg, and everything bagel seasoning.", price: 13.00, category: "Breakfast", image_url: `${IMG}/httpsimages.fake-cafe.comavocado-toast.jpg.png`, sort_order: 2 },
-  { name: "Belgian Waffle", description: "Golden crispy waffle topped with fresh berries, whipped cream, and warm maple syrup.", price: 14.00, category: "Breakfast", image_url: `${IMG}/httpsimages.fake-cafe.combelgian-waffle.jpg.png`, sort_order: 3 },
-  { name: "Berry Parfait", description: "Greek yogurt layered with house-made granola, mixed berries, and honey.", price: 10.00, category: "Breakfast", image_url: `${IMG}/httpsimages.fake-cafe.comberry-parfait.jpg.png`, sort_order: 4 },
-  { name: "Salmon Bagel", description: "Everything bagel with cream cheese, smoked salmon, capers, red onion, and dill.", price: 16.00, category: "Breakfast", image_url: `${IMG}/httpsimages.fake-cafe.comsalmon-bagel.jpg.png`, sort_order: 5 },
-  { name: "Caramel Macchiato", description: "Espresso poured over velvety steamed milk with rich caramel drizzle.", price: 7.00, category: "Breakfast", image_url: `${IMG}/httpsimages.fake-cafe.comcaramel-macch.jpg.png`, sort_order: 6 },
+export type StarterItem = {
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  meal_period: MealPeriod;
+  image_url: string;
+  sort_order: number;
+};
 
-  // === LUNCH (6) ===
-  { name: "Caesar Salad", description: "Romaine hearts, shaved parmesan, house-made croutons, and classic Caesar dressing.", price: 14.00, category: "Lunch", image_url: `${IMG}/httpsimages.fake-cafe.comcaesar-salad.jpg.png`, sort_order: 7 },
-  { name: "Wagyu Burger", description: "6oz wagyu beef patty with aged cheddar, caramelized onions, truffle aioli, on a brioche bun.", price: 22.00, category: "Lunch", image_url: `${IMG}/httpsimages.fake-cafe.comwagyu-burger.jpg.png`, sort_order: 8 },
-  { name: "Fish Tacos", description: "Beer-battered cod with cabbage slaw, pico de gallo, and chipotle crema in warm corn tortillas.", price: 18.00, category: "Lunch", image_url: `${IMG}/httpsimages.fake-cafe.comfish-tacos.jpg.png`, sort_order: 9 },
-  { name: "Pesto Pasta", description: "Al dente penne tossed in house-made basil pesto with sun-dried tomatoes and pine nuts.", price: 19.00, category: "Lunch", image_url: `${IMG}/httpsimages.fake-cafe.compesto-pasta.jpg.png`, sort_order: 10 },
-  { name: "Protein Bowl", description: "Quinoa, grilled chicken, roasted chickpeas, avocado, cucumber, and lemon tahini dressing.", price: 20.00, category: "Lunch", image_url: `${IMG}/httpsimages.fake-cafe.comprotein-bowl.jpg.png`, sort_order: 11 },
-  { name: "Tomato Bisque", description: "Velvety roasted tomato soup with fresh basil oil and a side of grilled sourdough.", price: 11.00, category: "Lunch", image_url: `${IMG}/httpsimages.fake-cafe.comtomato-bisque.jpg.png`, sort_order: 12 },
+export const STARTER_ITEMS: StarterItem[] = [
+  // === BREAKFAST ===
+  {
+    name: "Classic Eggs Benedict",
+    description: "Two poached eggs with Canadian bacon on toasted English muffins topped with hollandaise.",
+    price: 14.50,
+    category: "Breakfast",
+    meal_period: "breakfast",
+    image_url: "https://images.pexels.com/photos/139746/pexels-photo-139746.jpeg?auto=compress&cs=tinysrgb&w=800",
+    sort_order: 1,
+  },
+  {
+    name: "Belgian Waffle Stack",
+    description: "Thick malted waffles topped with fresh strawberries, whipped cream, and maple syrup.",
+    price: 12.00,
+    category: "Breakfast",
+    meal_period: "breakfast",
+    image_url: "https://images.pexels.com/photos/376464/pexels-photo-376464.jpeg?auto=compress&cs=tinysrgb&w=800",
+    sort_order: 2,
+  },
+  {
+    name: "Smoked Salmon Bagel",
+    description: "Toasted everything bagel with cream cheese, capers, red onion, and lox.",
+    price: 15.00,
+    category: "Breakfast",
+    meal_period: "breakfast",
+    image_url: "https://images.pexels.com/photos/3491078/pexels-photo-3491078.jpeg?auto=compress&cs=tinysrgb&w=800",
+    sort_order: 3,
+  },
+  {
+    name: "Sunrise Protein Bowl",
+    description: "Quinoa base with kale, sweet potato, black beans, and a sunny-side-up egg.",
+    price: 13.25,
+    category: "Specials",
+    meal_period: "breakfast",
+    image_url: "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=800",
+    sort_order: 4,
+  },
+  {
+    name: "Caramel Macchiato",
+    description: "Double shot of espresso with steamed milk and a buttery caramel drizzle.",
+    price: 5.50,
+    category: "Drinks",
+    meal_period: "all-day",
+    image_url: "https://images.pexels.com/photos/312418/pexels-photo-312418.jpeg?auto=compress&cs=tinysrgb&w=800",
+    sort_order: 5,
+  },
 
-  // === DINNER (5) ===
-  { name: "Ribeye Steak", description: "16oz prime ribeye, dry-aged 28 days, served with truffle butter and garlic mashed potatoes.", price: 58.00, category: "Dinner", image_url: `${IMG}/httpsimages.fake-cafe.comribeye-steak.jpg.png`, sort_order: 13 },
-  { name: "Seared Scallops", description: "Pan-seared diver scallops on sweet corn purée with crispy prosciutto and microgreens.", price: 42.00, category: "Dinner", image_url: `${IMG}/httpsimages.fake-cafe.comscallops.jpg.png`, sort_order: 14 },
-  { name: "Tiramisu", description: "Classic Italian dessert with espresso-soaked ladyfingers, mascarpone cream, and cocoa dust.", price: 12.00, category: "Dinner", image_url: `${IMG}/httpsimages.fake-cafe.comtiramisu.jpg.png`, sort_order: 15 },
-  { name: "Lemon Tart", description: "Buttery shortcrust pastry filled with silky lemon curd and toasted Italian meringue.", price: 11.00, category: "Dinner", image_url: `${IMG}/httpsimages.fake-cafe.comlemon-tart.jpg.png`, sort_order: 16 },
-  { name: "Apple Galette", description: "Rustic free-form pastry with spiced apple filling, caramel drizzle, and vanilla bean ice cream.", price: 13.00, category: "Dinner", image_url: `${IMG}/httpsimages.fake-cafe.comapple-galette.jpg.png`, sort_order: 17 },
+  // === LUNCH ===
+  {
+    name: "Avocado Sourdough Toast",
+    description: "Smashed avocado with radish, chili flakes, and a squeeze of lime on rustic sourdough.",
+    price: 11.50,
+    category: "Lunch",
+    meal_period: "lunch",
+    image_url: "https://images.pexels.com/photos/1640770/pexels-photo-1640770.jpeg?auto=compress&cs=tinysrgb&w=800",
+    sort_order: 6,
+  },
+  {
+    name: "Pesto Pasta Primavera",
+    description: "Penne pasta with seasonal roasted vegetables and nut-free basil pesto.",
+    price: 14.00,
+    category: "Lunch",
+    meal_period: "lunch",
+    image_url: "https://images.pexels.com/photos/1279330/pexels-photo-1279330.jpeg?auto=compress&cs=tinysrgb&w=800",
+    sort_order: 7,
+  },
+  {
+    name: "Turkey Club",
+    description: "Turkey club sandwich on sourdough bread with three different types of cheese.",
+    price: 8.50,
+    category: "Lunch",
+    meal_period: "lunch",
+    image_url: "https://images.pexels.com/photos/1639557/pexels-photo-1639557.jpeg?auto=compress&cs=tinysrgb&w=800",
+    sort_order: 8,
+  },
+  {
+    name: "Fish Tacos",
+    description: "Beer-battered cod with cabbage slaw, pico de gallo, and chipotle crema in warm corn tortillas.",
+    price: 10.00,
+    category: "Lunch",
+    meal_period: "lunch",
+    image_url: "https://images.pexels.com/photos/2092507/pexels-photo-2092507.jpeg?auto=compress&cs=tinysrgb&w=800",
+    sort_order: 9,
+  },
 
-  // === DRINKS (3) ===
-  { name: "Raspberry Lemonade", description: "House-made lemonade with fresh raspberries, cane sugar, and a sprig of mint.", price: 6.00, category: "Drinks", image_url: `${IMG}/httpsimages.fake-cafe.comrasp-lemonade.jpg.png`, sort_order: 18 },
-  { name: "Peach Iced Tea", description: "Freshly brewed black tea infused with ripe peach, served over ice with a lemon wedge.", price: 5.50, category: "Drinks", image_url: `${IMG}/httpsimages.fake-cafe.compeach-tea.jpg.png`, sort_order: 19 },
-  { name: "Cheesecake", description: "New York-style cheesecake with a graham cracker crust and fresh strawberry compote.", price: 10.00, category: "Drinks", image_url: `${IMG}/httpsimages.fake-cafe.comcheesecake.jpg.png`, sort_order: 20 },
+  // === DINNER ===
+  {
+    name: "Herb-Crusted Ribeye",
+    description: "12oz prime ribeye with garlic mashed potatoes and grilled asparagus.",
+    price: 32.00,
+    category: "Dinner",
+    meal_period: "dinner",
+    image_url: "https://images.pexels.com/photos/1251208/pexels-photo-1251208.jpeg?auto=compress&cs=tinysrgb&w=800",
+    sort_order: 10,
+  },
+  {
+    name: "Pan-Seared Scallops",
+    description: "Jumbo scallops over creamy mushroom risotto with a lemon butter drizzle.",
+    price: 28.50,
+    category: "Dinner",
+    meal_period: "dinner",
+    image_url: "https://images.pexels.com/photos/3655916/pexels-photo-3655916.jpeg?auto=compress&cs=tinysrgb&w=800",
+    sort_order: 11,
+  },
+  {
+    name: "Wagyu Burger",
+    description: "Premium wagyu beef with truffle aioli, aged cheddar, and brioche bun.",
+    price: 22.00,
+    category: "Dinner",
+    meal_period: "dinner",
+    image_url: "https://images.pexels.com/photos/1639565/pexels-photo-1639565.jpeg?auto=compress&cs=tinysrgb&w=800",
+    sort_order: 12,
+  },
+
+  // === DESSERTS ===
+  {
+    name: "New York Cheesecake",
+    description: "Classic creamy cheesecake with a graham cracker crust and macerated strawberries.",
+    price: 10.50,
+    category: "Desserts",
+    meal_period: "all-day",
+    image_url: "https://images.pexels.com/photos/1126359/pexels-photo-1126359.jpeg?auto=compress&cs=tinysrgb&w=800",
+    sort_order: 13,
+  },
+  {
+    name: "Tiramisu Classico",
+    description: "Layers of espresso-soaked ladyfingers and mascarpone cream dusted with cocoa.",
+    price: 9.50,
+    category: "Desserts",
+    meal_period: "all-day",
+    image_url: "https://images.pexels.com/photos/6880219/pexels-photo-6880219.jpeg?auto=compress&cs=tinysrgb&w=800",
+    sort_order: 14,
+  },
+  {
+    name: "Mixed Berry Parfait",
+    description: "Greek yogurt layered with house-made granola, honey, and seasonal berries.",
+    price: 8.50,
+    category: "Desserts",
+    meal_period: "all-day",
+    image_url: "https://images.pexels.com/photos/1132558/pexels-photo-1132558.jpeg?auto=compress&cs=tinysrgb&w=800",
+    sort_order: 15,
+  },
+  {
+    name: "Apple Galette",
+    description: "Rustic tart with spiced apples and a flaky, buttery crust.",
+    price: 9.00,
+    category: "Desserts",
+    meal_period: "all-day",
+    image_url: "https://images.pexels.com/photos/4110003/pexels-photo-4110003.jpeg?auto=compress&cs=tinysrgb&w=800",
+    sort_order: 16,
+  },
+
+  // === DRINKS ===
+  {
+    name: "Fresh Lemonade",
+    description: "House-made lemonade with cane sugar syrup and a sprig of fresh mint.",
+    price: 5.00,
+    category: "Drinks",
+    meal_period: "all-day",
+    image_url: "https://images.pexels.com/photos/96974/pexels-photo-96974.jpeg?auto=compress&cs=tinysrgb&w=800",
+    sort_order: 17,
+  },
+  {
+    name: "Peach Iced Tea",
+    description: "Freshly brewed black tea infused with ripe peach, served over ice with a lemon wedge.",
+    price: 5.00,
+    category: "Drinks",
+    meal_period: "all-day",
+    image_url: "https://images.pexels.com/photos/792613/pexels-photo-792613.jpeg?auto=compress&cs=tinysrgb&w=800",
+    sort_order: 18,
+  },
+  {
+    name: "Mocha Hot Chocolate",
+    description: "Rich dark chocolate blended with espresso and steamed milk.",
+    price: 5.00,
+    category: "Drinks",
+    meal_period: "all-day",
+    image_url: "https://images.pexels.com/photos/302899/pexels-photo-302899.jpeg?auto=compress&cs=tinysrgb&w=800",
+    sort_order: 19,
+  },
+  {
+    name: "Green Tea",
+    description: "Delicate whole-leaf green tea, gently steeped and served hot or over ice.",
+    price: 5.00,
+    category: "Drinks",
+    meal_period: "all-day",
+    image_url: "https://images.pexels.com/photos/1638280/pexels-photo-1638280.jpeg?auto=compress&cs=tinysrgb&w=800",
+    sort_order: 20,
+  },
 ];

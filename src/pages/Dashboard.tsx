@@ -27,8 +27,10 @@ import {
 import {
   UtensilsCrossed, Settings, Clock, CreditCard, Monitor, Globe, User,
   Save, ImagePlus, Loader as Loader2, X, Trash2, FileSpreadsheet, KeyRound,
-  ExternalLink, Download, LogOut, ChefHat,
+  ExternalLink, Download, LogOut, ChefHat, Plus, Pencil,
 } from "lucide-react";
+import { useMenuItems, type MenuItem } from "@/hooks/useMenuItems";
+import MenuItemModal from "@/components/MenuItemModal";
 import { STARTER_ITEMS } from "@/components/StarterContent";
 import * as XLSX from "xlsx";
 
@@ -131,6 +133,11 @@ function DashboardContent() {
   const [serviceHours, setServiceHours] = useState<ServiceHours>(DEFAULT_SERVICE_HOURS);
   const [businessHours, setBusinessHours] = useState<BusinessHours>(DEFAULT_BUSINESS_HOURS);
   const [unavailableDisplay, setUnavailableDisplay] = useState<"hide" | "gray">("hide");
+
+  // Menu management
+  const { data: menuItems } = useMenuItems(restaurantId);
+  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [addingItemCategory, setAddingItemCategory] = useState<string | null>(null);
 
   useEffect(() => {
     if (settings && !initialized) {
@@ -502,9 +509,9 @@ function DashboardContent() {
                     </AlertDialogTrigger>
                     <AlertDialogContent className="bg-card border-border">
                       <AlertDialogHeader>
-                        <AlertDialogTitle className="text-foreground">Clear All Menu Items?</AlertDialogTitle>
+                        <AlertDialogTitle className="text-foreground">Clear All Menu Items & Gallery?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This will permanently delete all menu items. This action cannot be undone.
+                          This will permanently delete all menu items and gallery photos. This action cannot be undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -516,7 +523,50 @@ function DashboardContent() {
                     </AlertDialogContent>
                   </AlertDialog>
                 </div>
-                <p className="text-xs text-muted-foreground text-center">Tip: In admin mode, click any menu item to edit it.</p>
+                {/* Menu Item Management */}
+                <div className="border-b border-border pb-2 mt-2">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Menu Items</h3>
+                </div>
+
+                {(!menuItems || menuItems.length === 0) ? (
+                  <div className="text-center py-6 border border-dashed border-border rounded-lg">
+                    <UtensilsCrossed className="w-10 h-10 mx-auto mb-2 text-muted-foreground opacity-30" />
+                    <p className="text-sm text-muted-foreground">No menu items yet.</p>
+                    <p className="text-xs text-muted-foreground mt-1">Use "Load Demo Items" above or add one below.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+                    {menuItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-3 bg-secondary rounded-lg px-3 py-2 group"
+                      >
+                        {item.image_url && (
+                          <img src={item.image_url} alt={item.name} className="w-9 h-9 rounded object-cover flex-shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
+                          <p className="text-xs text-muted-foreground">{item.category} · ${Number(item.price).toFixed(2)}</p>
+                        </div>
+                        <button
+                          onClick={() => setEditingItem(item)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-card text-muted-foreground hover:text-gold"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAddingItemCategory("Lunch")}
+                  className="w-full gap-2 border-dashed border-border hover:border-gold/40 hover:text-gold"
+                >
+                  <Plus className="w-4 h-4" /> Add Menu Item
+                </Button>
 
                 <div className="pt-4 border-t border-border">
                   <Button onClick={handleSave} disabled={update.isPending} className="w-full gradient-gold text-primary-foreground font-semibold">
@@ -638,6 +688,12 @@ function DashboardContent() {
 
       <ExcelImporter open={showImporter} onClose={() => setShowImporter(false)} />
       <ChangePasswordModal open={showChangePassword} onClose={() => setShowChangePassword(false)} />
+      {editingItem && (
+        <MenuItemModal item={editingItem} onClose={() => setEditingItem(null)} />
+      )}
+      {addingItemCategory && (
+        <MenuItemModal category={addingItemCategory} onClose={() => setAddingItemCategory(null)} />
+      )}
     </div>
   );
 }
