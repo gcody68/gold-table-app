@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import heroPhoneImg from "@/assets/image.png";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useAdmin } from "@/contexts/AdminContext";
 import { AdminProvider } from "@/contexts/AdminContext";
 import { Zap, Sparkles, Palette, Monitor, ChartBar as BarChart2, Smartphone, Search, Shield, Store, ShoppingBag, Truck, ArrowRight, ChevronDown, Menu, X, ExternalLink, Calendar, Send, UtensilsCrossed, Star, Check, Eye, EyeOff } from "lucide-react";
@@ -711,6 +711,11 @@ function ContactFooter() {
 function LandingInner() {
   const { isAdmin, session } = useAdmin();
 
+  // Logged-in users should go straight to the dashboard
+  if (isAdmin && session) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
     <div className="min-h-screen" style={{ background: PAGE_BG }}>
       <Navbar />
@@ -721,24 +726,6 @@ function LandingInner() {
       <Pricing />
       <CTASection />
       <ContactFooter />
-
-      {/* Floating auth indicator for logged-in admins */}
-      {isAdmin && session && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-2xl p-4 shadow-2xl max-w-xs" style={{ background: DARK_CARD, border: "1px solid rgba(201,168,76,0.3)" }}>
-          <p className="text-white text-sm font-semibold mb-1">Welcome back</p>
-          <p className="text-xs mb-3" style={{ color: "#6b7280" }}>{session.user.email}</p>
-          <Link to="/demo" className="block text-center text-sm font-semibold py-2 rounded-lg mb-2 transition-colors" style={{ background: GOLD, color: "#111" }}>
-            Open Dashboard
-          </Link>
-          <button
-            onClick={() => import("@/integrations/supabase/client").then(({ supabase }) => supabase.auth.signOut())}
-            className="w-full text-xs text-center transition-colors py-1"
-            style={{ color: "#4b5563" }}
-          >
-            Sign out
-          </button>
-        </div>
-      )}
     </div>
   );
 }

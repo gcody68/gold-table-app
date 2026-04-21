@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +11,7 @@ import Index from "./pages/Index.tsx";
 import Landing from "./pages/Landing.tsx";
 import Kitchen from "./pages/Kitchen.tsx";
 import Demo from "./pages/Demo.tsx";
+import Dashboard from "./pages/Dashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -18,12 +19,10 @@ const queryClient = new QueryClient();
 function RootRoute() {
   const { resolution } = useRestaurant();
   const [session, setSession] = useState<Session | null | undefined>(undefined);
-  const [wasLoggedIn, setWasLoggedIn] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
-      if (s) setWasLoggedIn(true);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
     });
     return () => subscription.unsubscribe();
@@ -37,11 +36,8 @@ function RootRoute() {
     );
   }
 
-  // Bare domain with logged-in user → show their restaurant dashboard
-  if (resolution.status === "root" && session) return <Index />;
-
-  // Bare domain after logout → show customer view, not the marketing landing page
-  if (resolution.status === "root" && wasLoggedIn) return <Index />;
+  // Logged-in user on bare domain → redirect to dashboard
+  if (resolution.status === "root" && session) return <Navigate to="/dashboard" replace />;
 
   // Bare domain / Vercel URL with no subdomain → show landing page
   if (resolution.status === "root") return <Landing />;
@@ -70,6 +66,7 @@ const App = () => (
         <RestaurantProvider>
           <Routes>
             <Route path="/" element={<RootRoute />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/kitchen" element={<Kitchen />} />
             <Route path="/demo" element={<Demo />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

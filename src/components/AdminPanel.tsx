@@ -218,24 +218,18 @@ export default function AdminPanel({ restaurantId }: Props) {
               variant="ghost"
               size="sm"
               onClick={() => {
+                const subdomain = settings?.subdomain;
                 const id = settings?.id ?? restaurantId;
-                const shopUrl = id
-                  ? `${window.location.origin}/?test_res_id=${id}`
-                  : window.location.origin;
-                // Kitchen resolves via session — no res_id param needed
-                const kitchenUrl = `${window.location.origin}/kitchen`;
-                window.open(shopUrl, "_blank");
-                const a = document.createElement("a");
-                a.href = kitchenUrl;
-                a.target = "_blank";
-                a.rel = "noopener";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+                const shopUrl = subdomain
+                  ? `https://${subdomain}.gildedtable.com`
+                  : id
+                    ? `${window.location.origin}/?test_res_id=${id}`
+                    : window.location.origin;
+                window.open(shopUrl, "_blank", "noopener");
               }}
               className="text-muted-foreground hover:text-foreground"
             >
-              <ExternalLink className="w-4 h-4 mr-1" /> Open My Shop
+              <ExternalLink className="w-4 h-4 mr-1" /> View My Public Site
             </Button>
             <Button
               variant="ghost"
