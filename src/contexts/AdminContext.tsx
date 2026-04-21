@@ -4,6 +4,7 @@ import type { Session } from "@supabase/supabase-js";
 
 export type AdminContextType = {
   isAdmin: boolean;
+  authLoading: boolean;
   session: Session | null;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, restaurantName: string) => Promise<{ error: string | null }>;
@@ -28,6 +29,7 @@ export function DemoAdminProvider({
 }) {
   const value: AdminContextType = {
     isAdmin,
+    authLoading: false,
     session: null,
     login: async () => { onLogin?.(); return { error: null }; },
     signUp: async () => { onLogin?.(); return { error: null }; },
@@ -47,16 +49,19 @@ const isTestShopMode = new URLSearchParams(window.location.search).has("test_res
 export function AdminProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setIsAdmin(!isTestShopMode && !!data.session);
+      setAuthLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       setIsAdmin(!isTestShopMode && !!s);
+      setAuthLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -95,7 +100,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AdminContext.Provider value={{ isAdmin, session, login, signUp, logout }}>
+    <AdminContext.Provider value={{ isAdmin, authLoading, session, login, signUp, logout }}>
       {children}
     </AdminContext.Provider>
   );

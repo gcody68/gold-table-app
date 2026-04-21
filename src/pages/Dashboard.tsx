@@ -99,7 +99,7 @@ async function exportData(restaurantId: string): Promise<void> {
 // Inner dashboard (requires auth)
 // ---------------------------------------------------------------------------
 function DashboardContent() {
-  const { isAdmin, session, logout } = useAdmin();
+  const { isAdmin, authLoading, session, logout } = useAdmin();
   const { restaurantId } = useRestaurant();
   const { data: settings } = useRestaurantSettings(restaurantId);
   const update = useUpdateSettings();
@@ -285,7 +285,14 @@ function DashboardContent() {
     window.open(url, "_blank", "noopener");
   };
 
-  // Unauthenticated — redirect to login page
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-gold border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
   if (!isAdmin) {
     return <Navigate to="/login" replace />;
   }

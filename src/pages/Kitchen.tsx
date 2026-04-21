@@ -193,8 +193,7 @@ function DemoKitchenBoard() {
 const urlResId = new URLSearchParams(window.location.search).get("res_id");
 
 function KitchenBoard() {
-  const { isAdmin, session } = useAdmin();
-  const [loginOpen, setLoginOpen] = useState(!isAdmin);
+  const { isAdmin, authLoading, session } = useAdmin();
   const qc = useQueryClient();
 
   // Always resolve via the logged-in owner — never trust a URL param for kitchen auth.
@@ -230,7 +229,7 @@ function KitchenBoard() {
       if (error) throw error;
       return data as OrderWithItems[];
     },
-    refetchInterval: 10000,
+    refetchInterval: 5000,
     enabled: !!restaurantId,
   });
 
@@ -262,17 +261,22 @@ function KitchenBoard() {
     },
   });
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-gold border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <AdminLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+        <AdminLoginModal open={true} onClose={() => {}} />
         <div className="text-center space-y-4">
           <ChefHat className="w-16 h-16 text-gold mx-auto" />
           <h1 className="text-2xl font-serif font-bold text-foreground">Kitchen Display</h1>
           <p className="text-muted-foreground">Admin access required</p>
-          <Button onClick={() => setLoginOpen(true)} className="gradient-gold text-primary-foreground font-semibold">
-            Login
-          </Button>
         </div>
       </div>
     );

@@ -20,7 +20,7 @@ function normalizeEmail(input: string): string {
 type Mode = "login" | "signup";
 
 function LoginInner() {
-  const { isAdmin, login, signUp } = useAdmin();
+  const { isAdmin, authLoading, login, signUp } = useAdmin();
   const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>(() => {
     const stored = sessionStorage.getItem("loginMode");
@@ -32,6 +32,12 @@ function LoginInner() {
   const [restaurantName, setRestaurantName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  if (authLoading) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: PAGE_BG }}>
+      <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: `${GOLD} transparent transparent transparent` }} />
+    </div>
+  );
 
   // Already logged in → go straight to dashboard
   if (isAdmin) return <Navigate to="/dashboard" replace />;
