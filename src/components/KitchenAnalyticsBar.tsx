@@ -97,7 +97,7 @@ export default function KitchenAnalyticsBar({ businessHours, restaurantId, demoO
     } finally {
       setLoading(false);
     }
-  }, [isDemo, businessHours]);
+  }, [isDemo, businessHours, restaurantId]);
 
   useEffect(() => {
     if (isDemo) return;

@@ -226,24 +226,20 @@ function KitchenBoard() {
   const businessHours = (restaurant?.business_hours ?? null) as import("@/hooks/useRestaurantSettings").BusinessHours | null;
 
   const { data: orders, isLoading: ordersLoading } = useQuery({
-    queryKey: ["kitchen-orders", restaurantId, businessHours],
+    queryKey: ["kitchen-orders", restaurantId],
     queryFn: async () => {
       if (!restaurantId) return [];
-      const { start } = getBusinessDayWindow(businessHours);
-      console.log("[Kitchen] fetching orders for restaurant_id:", restaurantId, "since:", start.toISOString());
       const { data, error } = await supabase
         .from("orders")
         .select("*, order_items(*)")
         .eq("restaurant_id", restaurantId)
         .eq("status", "pending")
-        .gte("created_at", start.toISOString())
         .order("created_at", { ascending: true });
-      if (error) { console.error("[Kitchen] orders error:", error); throw error; }
-      console.log("[Kitchen] fetched", data?.length ?? 0, "orders");
+      if (error) throw error;
       return data as OrderWithItems[];
     },
     refetchInterval: 10000,
-    enabled: isAdmin && !!restaurantId,
+    enabled: !!restaurantId,
   });
 
   // Realtime subscription filtered by restaurantId
