@@ -12,13 +12,19 @@ export type RestaurantResolution =
 
 function resolveHostnameSlug(): string | null {
   const hostname = window.location.hostname;
-
-  // subdomain.gildedtable.com → extract subdomain slug
   if (hostname.endsWith(`.${SUBDOMAIN_HOST}`)) {
     return hostname.slice(0, -(SUBDOMAIN_HOST.length + 1));
   }
-
   return null;
+}
+
+// ?test_res_id=UUID — injected by the Admin "Open My Shop" button for test mode
+function resolveTestParamId(): string | null {
+  try {
+    return new URLSearchParams(window.location.search).get("test_res_id");
+  } catch {
+    return null;
+  }
 }
 
 type RestaurantContextType = {
@@ -33,41 +39,59 @@ const RestaurantContext = createContext<RestaurantContextType>({
 
 export function RestaurantProvider({ children }: { children: ReactNode }) {
   const slug = resolveHostnameSlug();
+  const testParamId = resolveTestParamId();
 
   const { data: resolution, isLoading } = useQuery({
-    queryKey: ["restaurant-resolution", slug],
+    queryKey: ["restaurant-resolution", slug, testParamId],
     queryFn: async (): Promise<RestaurantResolution> => {
-      // No subdomain — check env var fallback first (e.g. Bolt/Vercel previews),
-      // then try to find any restaurant with a null/empty subdomain as last resort.
-      if (slug === null) {
-        const fallbackId = import.meta.env.VITE_RESTAURANT_ID;
-        if (fallbackId) return { status: "found", restaurantId: fallbackId };
+      // 1. ?test_res_id param — highest priority, set by Admin "Open My Shop" button
+      if (testParamId) {
+        return { status: "found", restaurantId: testParamId };
+      }
 
-        // Auto-detect: load the first restaurant available (single-tenant fallback)
-        const { data } = await supabase
+      // 2. Subdomain routing (production)
+      if (slug !== null) {
+        const isLikelySubdomain = !slug.includes(".");
+        const col = isLikelySubdomain ? "subdomain" : "custom_domain";
+        const { data, error } = await supabase
           .from("restaurant_settings")
           .select("id")
-          .order("created_at", { ascending: true })
-          .limit(1)
+          .eq(col, slug)
           .maybeSingle();
-        if (data?.id) return { status: "found", restaurantId: data.id };
-
-        return { status: "root" };
+        if (error || !data) return { status: "not-found" };
+        return { status: "found", restaurantId: data.id };
       }
 
-      // Try subdomain first, then custom_domain fallback
-      const isLikelySubdomain = !slug.includes(".");
-      let query = supabase.from("restaurant_settings").select("id");
+      // 3. Env var override (Bolt/Vercel static previews with VITE_RESTAURANT_ID set)
+      const fallbackId = import.meta.env.VITE_RESTAURANT_ID;
+      if (fallbackId) return { status: "found", restaurantId: fallbackId };
 
-      if (isLikelySubdomain) {
-        query = query.eq("subdomain", slug);
-      } else {
-        query = query.eq("custom_domain", slug);
+      // 4. Session-first: resolve via the logged-in user's own restaurant so that
+      //    testing on a bare domain (localhost, preview URL) always routes to the
+      //    correct kitchen without needing a subdomain or env var.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        const isSuperAdmin = session.user.app_metadata?.super_admin === true;
+        if (!isSuperAdmin) {
+          const { data } = await supabase
+            .from("restaurant_settings")
+            .select("id")
+            .eq("owner_id", session.user.id)
+            .maybeSingle();
+          if (data?.id) return { status: "found", restaurantId: data.id };
+        }
       }
 
-      const { data, error } = await query.maybeSingle();
-      if (error || !data) return { status: "not-found" };
-      return { status: "found", restaurantId: data.id };
+      // 5. Last resort: first restaurant (unauthenticated local dev / single-tenant)
+      const { data } = await supabase
+        .from("restaurant_settings")
+        .select("id")
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (data?.id) return { status: "found", restaurantId: data.id };
+
+      return { status: "root" };
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -76,8 +100,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     ? { status: "loading" }
     : (resolution ?? { status: "root" });
 
-  const restaurantId =
-    res.status === "found" ? res.restaurantId : null;
+  const restaurantId = res.status === "found" ? res.restaurantId : null;
 
   return (
     <RestaurantContext.Provider value={{ resolution: res, restaurantId }}>

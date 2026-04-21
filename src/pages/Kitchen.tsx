@@ -195,10 +195,22 @@ function KitchenBoard() {
   const [loginOpen, setLoginOpen] = useState(!isAdmin);
   const qc = useQueryClient();
 
-  // 1. URL-based restaurant: resolve from subdomain/hostname (same logic as RestaurantContext)
+  // 1. URL-based restaurant: mirrors RestaurantContext resolution priority
+  //    ?test_res_id > subdomain > VITE_RESTAURANT_ID env > (no fallback — let adminRestaurant win)
   const { data: urlRestaurant, isLoading: urlLoading } = useQuery({
     queryKey: ["kitchen-url-restaurant"],
     queryFn: async () => {
+      // ?test_res_id takes highest priority (set by Admin "Open My Shop" button)
+      const testParamId = new URLSearchParams(window.location.search).get("test_res_id");
+      if (testParamId) {
+        const { data } = await supabase
+          .from("restaurant_settings")
+          .select("id, business_name")
+          .eq("id", testParamId)
+          .maybeSingle();
+        return data ?? null;
+      }
+
       const hostname = window.location.hostname;
       const SUBDOMAIN_HOST = "gildedtable.com";
       let slug: string | null = null;
@@ -217,7 +229,6 @@ function KitchenBoard() {
         return data ?? null;
       }
 
-      // No subdomain — check env var fallback
       const fallbackId = import.meta.env.VITE_RESTAURANT_ID;
       if (fallbackId) {
         const { data } = await supabase
@@ -228,14 +239,8 @@ function KitchenBoard() {
         return data ?? null;
       }
 
-      // Last resort: first restaurant (single-tenant / local dev)
-      const { data } = await supabase
-        .from("restaurant_settings")
-        .select("id, business_name")
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      return data ?? null;
+      // No URL signal — return null so adminRestaurant is used exclusively
+      return null;
     },
     staleTime: 5 * 60 * 1000,
   });

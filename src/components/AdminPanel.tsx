@@ -217,10 +217,16 @@ export default function AdminPanel({ restaurantId }: Props) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => window.open(window.location.origin, "_blank")}
+              onClick={() => {
+                const id = settings?.id ?? restaurantId;
+                const url = id
+                  ? `${window.location.origin}/?test_res_id=${id}`
+                  : window.location.origin;
+                window.open(url, "_blank");
+              }}
               className="text-muted-foreground hover:text-foreground"
             >
-              <ExternalLink className="w-4 h-4 mr-1" /> Preview Shop
+              <ExternalLink className="w-4 h-4 mr-1" /> Open My Shop
             </Button>
             <Button
               variant="ghost"
