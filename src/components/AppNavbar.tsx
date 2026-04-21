@@ -3,6 +3,7 @@ import { useRestaurantSettings } from "@/hooks/useRestaurantSettings";
 import { useLightMode } from "@/hooks/useLightMode";
 import { Settings, Shield, Sun, Moon } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import AdminLoginModal from "./AdminLoginModal";
 
 type Props = { showAdmin?: boolean; onToggleAdmin?: () => void; restaurantId?: string | null };
@@ -12,6 +13,7 @@ export default function AppNavbar({ showAdmin, onToggleAdmin, restaurantId }: Pr
   const { data: settings } = useRestaurantSettings(restaurantId);
   const { isLight, toggle: toggleLight } = useLightMode();
   const [loginOpen, setLoginOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <>
@@ -38,8 +40,9 @@ export default function AppNavbar({ showAdmin, onToggleAdmin, restaurantId }: Pr
             </button>
             {isAdmin && (
               <button
-                onClick={onToggleAdmin}
-                className={`p-2 rounded-md transition-colors ${showAdmin ? "bg-gold text-primary-foreground" : "text-muted-foreground hover:text-gold"}`}
+                onClick={() => navigate("/dashboard")}
+                className="p-2 rounded-md transition-colors text-muted-foreground hover:text-gold"
+                title="Go to Dashboard"
               >
                 <Settings className="w-5 h-5" />
               </button>

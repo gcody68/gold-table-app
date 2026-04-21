@@ -220,7 +220,8 @@ export default function AdminPanel({ restaurantId }: Props) {
               onClick={() => {
                 const subdomain = settings?.subdomain;
                 const id = settings?.id ?? restaurantId;
-                const shopUrl = subdomain
+                const isProduction = window.location.hostname.endsWith("gildedtable.com");
+                const shopUrl = subdomain && isProduction
                   ? `https://${subdomain}.gildedtable.com`
                   : id
                     ? `${window.location.origin}/?test_res_id=${id}`

@@ -273,10 +273,14 @@ function DashboardContent() {
 
   const handleViewPublicSite = () => {
     const subdomain = settings?.subdomain;
-    const url = subdomain
+    const id = settings?.id ?? restaurantId;
+    // On non-production hosts (preview URLs, localhost) always use test_res_id so we
+    // don't try to resolve a real subdomain that hasn't propagated through DNS yet.
+    const isProduction = window.location.hostname.endsWith("gildedtable.com");
+    const url = subdomain && isProduction
       ? `https://${subdomain}.gildedtable.com`
-      : settings?.id
-        ? `${window.location.origin}/?test_res_id=${settings.id}`
+      : id
+        ? `${window.location.origin}/?test_res_id=${id}`
         : window.location.origin;
     window.open(url, "_blank", "noopener");
   };
