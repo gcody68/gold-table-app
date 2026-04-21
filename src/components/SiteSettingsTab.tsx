@@ -13,6 +13,39 @@ const SUBDOMAIN_HOST = "gildedtable.com";
 const VERCEL_IP = "76.76.21.21";
 const VERCEL_CNAME = "cname.vercel-dns.com";
 
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/ /g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** True when running on a real Vercel deployment (not local dev or Bolt preview). */
+function isVercelProduction(): boolean {
+  const host = window.location.hostname;
+  // Custom production domain
+  if (host === SUBDOMAIN_HOST || host.endsWith(`.${SUBDOMAIN_HOST}`)) return true;
+  // Vercel deployment URLs (project.vercel.app)
+  if (host.endsWith(".vercel.app")) return true;
+  return false;
+}
+
+/**
+ * Returns the URL that is actually live and reachable right now for this restaurant.
+ * - On Vercel: subdomain URL if configured, otherwise the current origin + test_res_id
+ * - On dev/Bolt preview: always test_res_id so we never hit a broken subdomain route
+ */
+function getLiveUrl(settings: RestaurantSettings): string {
+  const onVercel = isVercelProduction();
+  const subdomain = settings.subdomain?.trim();
+  if (onVercel && subdomain) {
+    return `https://${subdomain}.${SUBDOMAIN_HOST}`;
+  }
+  return `${window.location.origin}/?test_res_id=${settings.id}`;
+}
+
 function CopyButton({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
@@ -52,14 +85,6 @@ function DnsRow({ type, host, value }: { type: string; host: string; value: stri
   );
 }
 
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/ /g, "-")
-    .replace(/[^a-z0-9-]/g, "")
-    .replace(/-+/g, "-");
-}
-
 type Props = {
   settings: RestaurantSettings;
 };
@@ -87,18 +112,26 @@ export default function SiteSettingsTab({ settings }: Props) {
       </div>
     );
   }
-  const [subdomain, setSubdomain] = useState(settings.subdomain ?? "");
+
+  // Derive a clean default subdomain from business_name if none is saved yet
+  const defaultSubdomain = settings.subdomain?.trim()
+    || slugify(settings.business_name || "");
+
+  const [subdomain, setSubdomain] = useState(defaultSubdomain);
   const [customDomain, setCustomDomain] = useState(settings.custom_domain ?? "");
   const [saving, setSaving] = useState(false);
   const [subdomainError, setSubdomainError] = useState("");
+  const [savedLiveUrl, setSavedLiveUrl] = useState(() => getLiveUrl(settings));
   const [customDomainManual, setCustomDomainManual] = useState(
     !!(settings.custom_domain && settings.custom_domain !== `${settings.subdomain}.com`)
   );
 
   useEffect(() => {
-    setSubdomain(settings.subdomain ?? "");
+    const clean = settings.subdomain?.trim() || slugify(settings.business_name || "");
+    setSubdomain(clean);
     setCustomDomain(settings.custom_domain ?? "");
-  }, [settings.subdomain, settings.custom_domain]);
+    setSavedLiveUrl(getLiveUrl(settings));
+  }, [settings.subdomain, settings.custom_domain, settings.business_name, settings.id]);
 
   const handleSubdomainChange = (val: string) => {
     const slug = slugify(val);
@@ -126,13 +159,14 @@ export default function SiteSettingsTab({ settings }: Props) {
 
     setSaving(true);
     try {
-      const { error } = await supabase
+      const { data: updated, error } = await supabase
         .from("restaurant_settings")
         .update({
           subdomain: subdomain.trim() || null,
           custom_domain: customDomain.trim() || null,
         })
-        .eq("id", settings.id);
+        .eq("id", settings.id)
+        .select("id, subdomain, custom_domain");
 
       if (error) {
         if (error.message.includes("subdomain")) {
@@ -145,6 +179,17 @@ export default function SiteSettingsTab({ settings }: Props) {
         return;
       }
 
+      if (!updated || updated.length === 0) {
+        toast.error("Save failed — your session may have expired. Please log out and back in.");
+        return;
+      }
+
+      // Update the live URL display without navigating away
+      const newLiveUrl = isVercelProduction() && subdomain.trim()
+        ? `https://${subdomain.trim()}.${SUBDOMAIN_HOST}`
+        : `${window.location.origin}/?test_res_id=${settings.id}`;
+      setSavedLiveUrl(newLiveUrl);
+
       qc.invalidateQueries({ queryKey: ["restaurant-settings"] });
       toast.success("Domain settings saved!");
     } catch {
@@ -154,11 +199,7 @@ export default function SiteSettingsTab({ settings }: Props) {
     }
   };
 
-  const previewUrl = subdomain
-    ? `https://${subdomain}.${SUBDOMAIN_HOST}`
-    : null;
-
-  const hasCustomDomain = customDomain.trim().length > 0;
+  const onVercel = isVercelProduction();
 
   return (
     <div className="space-y-8">
@@ -167,6 +208,25 @@ export default function SiteSettingsTab({ settings }: Props) {
         <p className="text-xs text-muted-foreground">
           Configure your restaurant's public URL and custom domain.
         </p>
+      </div>
+
+      {/* Current live URL banner */}
+      <div className="rounded-lg border border-gold/20 bg-gold/5 p-4 space-y-1.5">
+        <p className="text-xs font-semibold text-foreground">Your current working URL</p>
+        <a
+          href={savedLiveUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 text-sm text-gold hover:text-gold/80 transition-colors break-all"
+        >
+          <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
+          {savedLiveUrl}
+        </a>
+        {!onVercel && (
+          <p className="text-xs text-muted-foreground">
+            Running in preview mode — this link uses your restaurant ID. Deploy to Vercel to activate your subdomain URL.
+          </p>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -195,16 +255,6 @@ export default function SiteSettingsTab({ settings }: Props) {
             <p className="text-destructive text-xs flex items-center gap-1">
               <AlertCircle className="w-3 h-3" /> {subdomainError}
             </p>
-          )}
-          {previewUrl && !subdomainError && (
-            <a
-              href={previewUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-gold hover:text-gold/80 transition-colors"
-            >
-              <ExternalLink className="w-3 h-3" /> Preview: {previewUrl}
-            </a>
           )}
         </div>
 
