@@ -68,6 +68,7 @@ const COMPARISON = [
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const { isAdmin } = useAdmin();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -75,14 +76,20 @@ function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const textColor = scrolled ? "#555" : "rgba(255,255,255,0.8)";
+  const textHover = scrolled ? "#111" : "#fff";
+
   return (
     <nav
       className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
-      style={scrolled ? { background: "rgba(255,255,255,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 8px rgba(0,0,0,0.08)" } : { background: "transparent" }}
+      style={scrolled
+        ? { background: "rgba(255,255,255,0.97)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 8px rgba(0,0,0,0.08)" }
+        : { background: "transparent" }}
     >
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-16">
         <div className="flex items-center justify-between h-16">
-          <a href="#" className="flex items-center gap-2 group">
+          {/* Logo */}
+          <a href="#" className="flex items-center gap-2 group flex-shrink-0">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm transition-transform group-hover:scale-105" style={{ background: GOLD }}>
               <UtensilsCrossed className="w-4 h-4 text-neutral-900" />
             </div>
@@ -91,31 +98,59 @@ function Navbar() {
             </span>
           </a>
 
+          {/* Desktop nav links */}
           <div className="hidden md:flex items-center gap-8">
             {NAV_LINKS.map((l) => (
               <a
                 key={l.label}
                 href={l.href}
                 className="text-sm font-medium transition-colors duration-200"
-                style={{ color: scrolled ? "#555" : "rgba(255,255,255,0.8)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = scrolled ? "#111" : "#fff")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = scrolled ? "#555" : "rgba(255,255,255,0.8)")}
+                style={{ color: textColor }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = textHover)}
+                onMouseLeave={(e) => (e.currentTarget.style.color = textColor)}
               >
                 {l.label}
               </a>
             ))}
           </div>
 
+          {/* Desktop right actions */}
           <div className="hidden md:flex items-center gap-3">
+            {isAdmin ? (
+              <Link
+                to="/dashboard"
+                className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200"
+                style={{ color: textColor }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = textHover)}
+                onMouseLeave={(e) => (e.currentTarget.style.color = textColor)}
+              >
+                Go to Dashboard
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200"
+                style={{ color: textColor }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = textHover)}
+                onMouseLeave={(e) => (e.currentTarget.style.color = textColor)}
+              >
+                Log In
+              </Link>
+            )}
             <Link
-              to="/demo"
-              className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5"
-              style={{ background: GOLD, color: "#111" }}
+              to="/login#signup"
+              className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+              style={{ background: GOLD, color: "#111", boxShadow: "0 2px 8px rgba(201,168,76,0.3)" }}
+              onClick={() => {
+                // Signal to login page to open signup tab
+                sessionStorage.setItem("loginMode", "signup");
+              }}
             >
-              Try Demo
+              Start Free Trial
             </Link>
           </div>
 
+          {/* Mobile hamburger */}
           <button
             className="md:hidden p-2 rounded-lg transition-colors"
             style={{ color: scrolled ? "#111" : "#fff" }}
@@ -127,8 +162,9 @@ function Navbar() {
         </div>
       </div>
 
+      {/* Mobile drawer */}
       {open && (
-        <div className="md:hidden bg-white border-t border-neutral-100 shadow-lg">
+        <div className="md:hidden shadow-lg" style={{ background: "#fff", borderTop: "1px solid rgba(0,0,0,0.06)" }}>
           <div className="px-4 py-4 flex flex-col gap-1">
             {NAV_LINKS.map((l) => (
               <a
@@ -140,14 +176,31 @@ function Navbar() {
                 {l.label}
               </a>
             ))}
-            <div className="pt-3 border-t border-neutral-100 mt-2">
+            <div className="pt-3 border-t border-neutral-100 mt-2 flex flex-col gap-2">
+              {isAdmin ? (
+                <Link
+                  to="/dashboard"
+                  className="block text-center text-sm font-medium py-2.5 px-4 rounded-xl text-neutral-700 hover:bg-neutral-50 transition-colors"
+                  onClick={() => setOpen(false)}
+                >
+                  Go to Dashboard
+                </Link>
+              ) : (
+                <Link
+                  to="/login"
+                  className="block text-center text-sm font-medium py-2.5 px-4 rounded-xl text-neutral-700 hover:bg-neutral-50 transition-colors"
+                  onClick={() => setOpen(false)}
+                >
+                  Log In
+                </Link>
+              )}
               <Link
-                to="/demo"
+                to="/login"
                 className="block text-center text-sm font-semibold px-5 py-3 rounded-xl"
                 style={{ background: GOLD, color: "#111" }}
-                onClick={() => setOpen(false)}
+                onClick={() => { sessionStorage.setItem("loginMode", "signup"); setOpen(false); }}
               >
-                Try Demo
+                Start Free Trial
               </Link>
             </div>
           </div>

@@ -20,7 +20,6 @@ import SiteSettingsTab from "@/components/SiteSettingsTab";
 import ProfileTab from "@/components/ProfileTab";
 import ExcelImporter from "@/components/ExcelImporter";
 import ChangePasswordModal from "@/components/ChangePasswordModal";
-import AdminLoginModal from "@/components/AdminLoginModal";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -106,7 +105,6 @@ function DashboardContent() {
   const update = useUpdateSettings();
   const qc = useQueryClient();
 
-  const [loginOpen, setLoginOpen] = useState(!isAdmin);
   const [activeTab, setActiveTab] = useState("branding");
 
   // Branding state
@@ -283,20 +281,9 @@ function DashboardContent() {
     window.open(url, "_blank", "noopener");
   };
 
+  // Unauthenticated — redirect to login page
   if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <AdminLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
-        <div className="text-center space-y-4">
-          <UtensilsCrossed className="w-16 h-16 text-gold mx-auto" />
-          <h1 className="text-2xl font-serif font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">Admin access required</p>
-          <Button onClick={() => setLoginOpen(true)} className="gradient-gold text-primary-foreground font-semibold">
-            Login
-          </Button>
-        </div>
-      </div>
-    );
+    return <Navigate to="/login" replace />;
   }
 
   const NAV_TABS = [
