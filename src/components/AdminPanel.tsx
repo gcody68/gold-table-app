@@ -222,9 +222,18 @@ export default function AdminPanel({ restaurantId }: Props) {
                 const shopUrl = id
                   ? `${window.location.origin}/?test_res_id=${id}`
                   : window.location.origin;
-                const kitchenUrl = `${window.location.origin}/kitchen`;
+                const kitchenUrl = id
+                  ? `${window.location.origin}/kitchen?res_id=${id}`
+                  : `${window.location.origin}/kitchen`;
+                // Open shop first (direct user gesture), then kitchen via link click
                 window.open(shopUrl, "_blank");
-                window.open(kitchenUrl, "_blank");
+                const a = document.createElement("a");
+                a.href = kitchenUrl;
+                a.target = "_blank";
+                a.rel = "noopener";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
               }}
               className="text-muted-foreground hover:text-foreground"
             >

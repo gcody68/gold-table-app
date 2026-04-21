@@ -11,14 +11,18 @@ type DailyStats = {
   topItem: string | null;
 };
 
-async function fetchDailyStats(businessHours: BusinessHours | null): Promise<DailyStats> {
+async function fetchDailyStats(businessHours: BusinessHours | null, restaurantId: string | null): Promise<DailyStats> {
   const { start, end } = getBusinessDayWindow(businessHours);
 
-  const { data: ordersData, error: ordersError } = await supabase
+  let query = supabase
     .from("orders")
     .select("id, total")
     .gte("created_at", start.toISOString())
     .lt("created_at", end.toISOString());
+
+  if (restaurantId) query = query.eq("restaurant_id", restaurantId);
+
+  const { data: ordersData, error: ordersError } = await query;
 
   if (ordersError) throw ordersError;
 
@@ -65,10 +69,11 @@ function computeDemoStats(orders: DemoOrder[]): DailyStats {
 
 type Props = {
   businessHours: BusinessHours | null;
+  restaurantId?: string | null;
   demoOrders?: DemoOrder[];
 };
 
-export default function KitchenAnalyticsBar({ businessHours, demoOrders }: Props) {
+export default function KitchenAnalyticsBar({ businessHours, restaurantId, demoOrders }: Props) {
   const isDemo = demoOrders !== undefined;
 
   const [stats, setStats] = useState<DailyStats>(() =>
@@ -85,7 +90,7 @@ export default function KitchenAnalyticsBar({ businessHours, demoOrders }: Props
   const refresh = useCallback(async () => {
     if (isDemo) return;
     try {
-      const data = await fetchDailyStats(businessHours);
+      const data = await fetchDailyStats(businessHours, restaurantId ?? null);
       setStats(data);
     } catch {
       // silent fail — stats are non-critical

@@ -190,28 +190,34 @@ function DemoKitchenBoard() {
 // ---------------------------------------------------------------------------
 // Real kitchen board — requires Supabase auth
 // ---------------------------------------------------------------------------
+const urlResId = new URLSearchParams(window.location.search).get("res_id");
+
 function KitchenBoard() {
   const { isAdmin, session } = useAdmin();
   const [loginOpen, setLoginOpen] = useState(!isAdmin);
   const qc = useQueryClient();
 
-  // Resolve the restaurant solely from the logged-in admin's owner_id.
-  // We deliberately do NOT use URL/subdomain here — that would cause false
-  // "Unauthorized" blocks when two restaurants share the same bare domain
-  // (e.g. preview URLs, localhost). RLS enforces actual data security.
+  // Prefer the res_id URL param (set by "Open My Shop"), fall back to owner_id lookup.
   const { data: restaurant, isLoading: restaurantLoading } = useQuery({
-    queryKey: ["kitchen-restaurant", session?.user?.id],
+    queryKey: ["kitchen-restaurant", urlResId ?? session?.user?.id],
     queryFn: async () => {
+      if (urlResId) {
+        const { data } = await supabase
+          .from("restaurant_settings")
+          .select("id, business_name, business_hours")
+          .eq("id", urlResId)
+          .maybeSingle();
+        return data ?? null;
+      }
       if (!session?.user?.id) return null;
       const { data } = await supabase
         .from("restaurant_settings")
         .select("id, business_name, business_hours")
         .eq("owner_id", session.user.id)
         .maybeSingle();
-      console.log("[Kitchen] resolved restaurant:", data);
       return data ?? null;
     },
-    enabled: !!session?.user?.id,
+    enabled: !!urlResId || !!session?.user?.id,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -303,22 +309,7 @@ function KitchenBoard() {
         </div>
       </header>
 
-      {/* Debug identity bar */}
-      <div className="border-b border-border bg-secondary/60 px-4 py-2 font-mono text-xs">
-        <div className="container flex flex-wrap gap-x-6 gap-y-1">
-          <span className="text-muted-foreground">
-            URL Restaurant: <span className="text-muted-foreground/60">{new URLSearchParams(window.location.search).get("test_res_id") ?? window.location.hostname}</span>
-          </span>
-          <span className="text-muted-foreground">
-            Logged-in Restaurant: <span className={restaurantId ? "text-foreground" : "text-amber-400"}>{restaurantLoading ? "…" : (restaurantId ?? "none")}</span>
-          </span>
-          <span className="text-muted-foreground">
-            Connection: {restaurantLoading ? <span>…</span> : restaurantId ? <span className="text-green-400 font-semibold">Connected — {restaurantName}</span> : <span className="text-amber-400">No restaurant linked to this account</span>}
-          </span>
-        </div>
-      </div>
-
-      <KitchenAnalyticsBar businessHours={businessHours} />
+      <KitchenAnalyticsBar businessHours={businessHours} restaurantId={restaurantId} />
 
       <div className="container py-6">
         {allLoading ? (
