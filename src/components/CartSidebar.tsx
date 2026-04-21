@@ -53,29 +53,11 @@ export default function CartSidebar({ restaurantId }: { restaurantId?: string | 
 
   const upsertCustomerLead = async () => {
     if (!customerInfo.phone.trim()) return;
-    const { data: existing } = await supabase
-      .from("customer_leads")
-      .select("id, order_count")
-      .eq("phone", customerInfo.phone.trim())
-      .maybeSingle();
-
-    if (existing) {
-      await supabase
-        .from("customer_leads")
-        .update({
-          name: customerInfo.name.trim(),
-          email: customerInfo.email.trim() || null,
-          last_order_date: new Date().toISOString(),
-          order_count: (existing.order_count || 1) + 1,
-        })
-        .eq("id", existing.id);
-    } else {
-      await supabase.from("customer_leads").insert({
-        name: customerInfo.name.trim(),
-        phone: customerInfo.phone.trim(),
-        email: customerInfo.email.trim() || null,
-      });
-    }
+    await supabase.rpc("upsert_customer_lead", {
+      p_name: customerInfo.name.trim(),
+      p_phone: customerInfo.phone.trim(),
+      p_email: customerInfo.email.trim() || null,
+    });
   };
 
   const submitOrder = async () => {
@@ -130,7 +112,8 @@ export default function CartSidebar({ restaurantId }: { restaurantId?: string | 
 
       setStep("confirmation");
       clearCart();
-    } catch {
+    } catch (err) {
+      console.error("Order submission error:", err);
       toast.error("Failed to place order. Please try again.");
     } finally {
       setSubmitting(false);
