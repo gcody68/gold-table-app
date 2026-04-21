@@ -40,6 +40,10 @@ export function DemoAdminProvider({
   );
 }
 
+// When the shop is opened via ?test_res_id (Admin "Open My Shop" button), the shared
+// auth session must not bleed into admin mode — the tab is a customer view.
+const isTestShopMode = new URLSearchParams(window.location.search).has("test_res_id");
+
 export function AdminProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -47,12 +51,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      setIsAdmin(!!data.session);
+      setIsAdmin(!isTestShopMode && !!data.session);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
-      setIsAdmin(!!s);
+      setIsAdmin(!isTestShopMode && !!s);
     });
 
     return () => subscription.unsubscribe();
