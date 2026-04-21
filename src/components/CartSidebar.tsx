@@ -115,8 +115,8 @@ export default function CartSidebar({ restaurantId }: { restaurantId?: string | 
       clearCart();
     } catch (err) {
       console.error("Order submission error:", err);
-      const msg = err instanceof Error ? err.message : (err as { message?: string })?.message ?? String(err);
-      toast.error(`Order failed: ${msg}`, { duration: 30000 });
+      const msg = JSON.stringify(err, null, 2);
+      alert(`ORDER ERROR:\n${msg}`);
     } finally {
       setSubmitting(false);
     }
