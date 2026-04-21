@@ -191,30 +191,85 @@ function DemoKitchenBoard() {
 // Real kitchen board — requires Supabase auth
 // ---------------------------------------------------------------------------
 function KitchenBoard() {
-  const { isAdmin } = useAdmin();
+  const { isAdmin, session } = useAdmin();
   const [loginOpen, setLoginOpen] = useState(!isAdmin);
   const qc = useQueryClient();
-  const { data: settings } = useRestaurantSettings();
+  const { data: settings, isLoading: settingsLoading } = useRestaurantSettings();
   const businessHours = settings?.business_hours ?? null;
+  const restaurantId = settings?.id ?? null;
+  const restaurantName = settings?.business_name ?? null;
 
-  const { data: orders, isLoading } = useQuery({
-    queryKey: ["kitchen-orders", settings?.id, businessHours],
+  // Debug: log the restaurant context so we can diagnose blank kitchen views
+  useEffect(() => {
+    console.log("[Kitchen] session uid:", session?.user?.id ?? "none");
+    console.log("[Kitchen] restaurant_id:", restaurantId ?? "not resolved yet");
+    console.log("[Kitchen] restaurant_name:", restaurantName ?? "not resolved yet");
+  }, [session?.user?.id, restaurantId, restaurantName]);
+
+  const { data: orders, isLoading: ordersLoading } = useQuery({
+    queryKey: ["kitchen-orders", restaurantId, businessHours],
     queryFn: async () => {
-      if (!settings?.id) return [];
+      if (!restaurantId) return [];
       const { start } = getBusinessDayWindow(businessHours);
+      console.log("[Kitchen] fetching orders for restaurant_id:", restaurantId, "since:", start.toISOString());
       const { data, error } = await supabase
         .from("orders")
         .select("*, order_items(*)")
-        .eq("restaurant_id", settings.id)
+        .eq("restaurant_id", restaurantId)
         .eq("status", "pending")
         .gte("created_at", start.toISOString())
         .order("created_at", { ascending: true });
-      if (error) throw error;
+      if (error) {
+        console.error("[Kitchen] orders fetch error:", error);
+        throw error;
+      }
+      console.log("[Kitchen] fetched", data?.length ?? 0, "orders");
       return data as OrderWithItems[];
     },
-    refetchInterval: 5000,
-    enabled: isAdmin && !!settings?.id,
+    refetchInterval: 10000,
+    enabled: isAdmin && !!restaurantId,
   });
+
+  // Realtime subscription — filtered by restaurant_id
+  useEffect(() => {
+    if (!restaurantId) return;
+
+    const channel = supabase
+      .channel(`kitchen-orders-${restaurantId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "orders",
+          filter: `restaurant_id=eq.${restaurantId}`,
+        },
+        (payload) => {
+          console.log("[Kitchen] realtime new order:", payload.new);
+          qc.invalidateQueries({ queryKey: ["kitchen-orders", restaurantId] });
+          toast("New order received!", { description: `From ${(payload.new as { customer_name?: string }).customer_name ?? "customer"}` });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "orders",
+          filter: `restaurant_id=eq.${restaurantId}`,
+        },
+        () => {
+          qc.invalidateQueries({ queryKey: ["kitchen-orders", restaurantId] });
+        }
+      )
+      .subscribe((status) => {
+        console.log("[Kitchen] realtime channel status:", status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [restaurantId, qc]);
 
   const markReady = useMutation({
     mutationFn: async (orderId: string) => {
@@ -225,7 +280,7 @@ function KitchenBoard() {
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["kitchen-orders"] });
+      qc.invalidateQueries({ queryKey: ["kitchen-orders", restaurantId] });
       toast.success("Order marked as ready!");
     },
   });
@@ -246,6 +301,8 @@ function KitchenBoard() {
     );
   }
 
+  const isLoading = settingsLoading || ordersLoading;
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
@@ -262,6 +319,16 @@ function KitchenBoard() {
           </div>
         </div>
       </header>
+
+      {/* Diagnostic identity bar */}
+      <div className={`border-b px-4 py-2 text-center text-xs ${restaurantName ? "bg-green-950/40 border-green-800/30 text-green-400" : "bg-amber-950/40 border-amber-800/30 text-amber-400"}`}>
+        {settingsLoading
+          ? "Resolving restaurant identity…"
+          : restaurantName
+            ? <>Live orders for: <span className="font-semibold">{restaurantName}</span> <span className="opacity-50">(id: {restaurantId})</span></>
+            : "Restaurant not identified — check that your account has a restaurant linked"
+        }
+      </div>
 
       <KitchenAnalyticsBar businessHours={businessHours} />
 
