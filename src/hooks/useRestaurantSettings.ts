@@ -103,8 +103,11 @@ export function getBusinessDayWindow(businessHours: BusinessHours | null): { sta
   const [openH, openM] = bh.open.split(":").map(Number);
 
   const now = new Date();
-  const todayOpen = new Date(now);
-  todayOpen.setHours(openH, openM, 0, 0);
+  // Use UTC so the window aligns with how Postgres stores timestamps
+  const todayOpen = new Date(Date.UTC(
+    now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),
+    openH, openM, 0, 0
+  ));
 
   // If we haven't hit today's opening yet, the current business day started yesterday
   const dayStart = now < todayOpen
