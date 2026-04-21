@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Globe, Copy, CheckCheck, CircleAlert as AlertCircle, ExternalLink, Server, Lock } from "lucide-react";
+import { Globe, Copy, CheckCheck, CircleAlert as AlertCircle, ExternalLink, Server, Lock, CircleCheck as CheckCircle2, Circle } from "lucide-react";
 import type { RestaurantSettings } from "@/hooks/useRestaurantSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -87,9 +87,21 @@ function DnsRow({ type, host, value }: { type: string; host: string; value: stri
 
 type Props = {
   settings: RestaurantSettings;
+  menuItemCount?: number;
 };
 
-export default function SiteSettingsTab({ settings }: Props) {
+function ChecklistItem({ done, label }: { done: boolean; label: string }) {
+  return (
+    <div className="flex items-center gap-2.5">
+      {done
+        ? <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+        : <Circle className="w-4 h-4 text-muted-foreground/40 flex-shrink-0" />}
+      <span className={`text-sm ${done ? "text-foreground" : "text-muted-foreground"}`}>{label}</span>
+    </div>
+  );
+}
+
+export default function SiteSettingsTab({ settings, menuItemCount = 0 }: Props) {
   const qc = useQueryClient();
   const demo = useDemoMode();
 
@@ -201,8 +213,34 @@ export default function SiteSettingsTab({ settings }: Props) {
 
   const onVercel = isVercelProduction();
 
+  const profileSet = !!(settings.business_name?.trim() && settings.business_phone?.trim());
+  const menuReady = menuItemCount > 0;
+  const domainSet = !!settings.subdomain?.trim();
+  const allGreen = profileSet && menuReady && domainSet;
+
   return (
     <div className="space-y-8">
+
+      {/* Launch Readiness Checklist */}
+      <div className={`rounded-lg border p-4 space-y-3 transition-colors ${allGreen ? "border-emerald-500/40 bg-emerald-500/5" : "border-border bg-secondary/30"}`}>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-foreground">Launch Readiness</p>
+          {allGreen && (
+            <span className="text-xs font-semibold text-emerald-400 animate-pulse">All systems go</span>
+          )}
+        </div>
+        <div className="space-y-2">
+          <ChecklistItem done={profileSet} label="Profile Set — business name & phone added" />
+          <ChecklistItem done={menuReady} label={`Menu Ready — ${menuItemCount} item${menuItemCount === 1 ? "" : "s"} on the menu`} />
+          <ChecklistItem done={domainSet} label={`Domain Set — subdomain saved${domainSet ? ` (${settings.subdomain})` : ""}`} />
+        </div>
+        {allGreen && (
+          <div className="pt-2 border-t border-emerald-500/20 text-center">
+            <p className="text-sm font-bold text-emerald-400">Your Restaurant is Live! 🚀</p>
+          </div>
+        )}
+      </div>
+
       <div className="space-y-1">
         <h3 className="text-sm font-semibold text-foreground">Site Identity</h3>
         <p className="text-xs text-muted-foreground">

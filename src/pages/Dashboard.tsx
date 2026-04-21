@@ -691,7 +691,7 @@ function DashboardContent() {
             <>
               <h1 className="text-2xl font-serif font-bold text-foreground mb-6">Site Settings</h1>
               {settings ? (
-                <SiteSettingsTab settings={settings} />
+                <SiteSettingsTab settings={settings} menuItemCount={menuItems?.length ?? 0} />
               ) : (
                 <div className="text-center py-8 text-muted-foreground text-sm">Loading settings...</div>
               )}
