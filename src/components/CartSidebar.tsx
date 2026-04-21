@@ -75,6 +75,8 @@ export default function CartSidebar({ restaurantId }: { restaurantId?: string | 
         return;
       }
 
+      const rid = settings?.id ?? null;
+      toast.info(`Debug: restaurant_id=${rid}`);
       const { data: order, error: orderErr } = await supabase
         .from("orders")
         .insert({
@@ -83,7 +85,7 @@ export default function CartSidebar({ restaurantId }: { restaurantId?: string | 
           customer_email: customerInfo.email.trim() || null,
           total,
           status: "pending",
-          restaurant_id: settings?.id ?? null,
+          restaurant_id: rid,
         })
         .select("id")
         .maybeSingle();
@@ -113,8 +115,9 @@ export default function CartSidebar({ restaurantId }: { restaurantId?: string | 
       setStep("confirmation");
       clearCart();
     } catch (err) {
+      const msg = err instanceof Error ? err.message : (err as { message?: string })?.message ?? String(err);
       console.error("Order submission error:", err);
-      toast.error("Failed to place order. Please try again.");
+      toast.error(`Order failed: ${msg}`);
     } finally {
       setSubmitting(false);
     }
