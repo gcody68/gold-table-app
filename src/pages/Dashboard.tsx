@@ -103,7 +103,9 @@ async function exportData(restaurantId: string): Promise<void> {
 function DashboardContent() {
   const { isAdmin, authLoading, session, logout } = useAdmin();
   const { restaurantId } = useRestaurant();
-  const { data: settings } = useRestaurantSettings(restaurantId);
+  // Always load settings via the owner/session path in Dashboard so saves are
+  // scoped to the authenticated user's own restaurant (not VITE_RESTAURANT_ID).
+  const { data: settings } = useRestaurantSettings();
   const update = useUpdateSettings();
   const qc = useQueryClient();
 

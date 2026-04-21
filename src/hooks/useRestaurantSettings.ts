@@ -123,11 +123,15 @@ export function useUpdateSettings() {
     mutationFn: async (updates: Partial<RestaurantSettings> & { id: string }) => {
       if (demo) { demo.updateSettings(updates); return; }
       const { id, ...rest } = updates;
-      const { error } = await supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated — please log in again.");
+      const { data: updated, error } = await supabase
         .from("restaurant_settings")
         .update(rest)
-        .eq("id", id);
+        .eq("id", id)
+        .select("id");
       if (error) throw error;
+      if (!updated || updated.length === 0) throw new Error("Save failed — your session may have expired. Please log out and back in.");
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["restaurant-settings"] }),
   });
