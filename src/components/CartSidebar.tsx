@@ -76,7 +76,7 @@ export default function CartSidebar({ restaurantId }: { restaurantId?: string | 
       }
 
       const rid = settings?.id ?? null;
-      toast.info(`Debug: restaurant_id=${rid}`);
+      alert(`DEBUG restaurant_id: ${rid}`);
       const { data: order, error: orderErr } = await supabase
         .from("orders")
         .insert({
