@@ -18,10 +18,6 @@ function resolveHostnameSlug(): string | null {
     return hostname.slice(0, -(SUBDOMAIN_HOST.length + 1));
   }
 
-  // Any other hostname (localhost, vercel.app, bolt previews, custom domains
-  // not yet configured) → show root landing page.
-  // Custom domains that ARE configured get looked up via the subdomain path above
-  // once DNS is pointed to gildedtable.com, or can be added here explicitly.
   return null;
 }
 
@@ -41,7 +37,12 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   const { data: resolution, isLoading } = useQuery({
     queryKey: ["restaurant-resolution", slug],
     queryFn: async (): Promise<RestaurantResolution> => {
-      if (slug === null) return { status: "root" };
+      // No subdomain — check for a hardcoded fallback restaurant ID (e.g. Bolt/Vercel previews)
+      if (slug === null) {
+        const fallbackId = import.meta.env.VITE_RESTAURANT_ID;
+        if (fallbackId) return { status: "found", restaurantId: fallbackId };
+        return { status: "root" };
+      }
 
       // Try subdomain first, then custom_domain fallback
       const isLikelySubdomain = !slug.includes(".");
