@@ -35,7 +35,7 @@ export default function HeroSection({ restaurantId }: { restaurantId?: string | 
             {settings.business_phone}
           </p>
         )}
-        {!isAdmin && (
+        {!isAdmin && !restaurantId && (
           <div className="pt-2">
             <Link to="/demo">
               <button className="inline-flex items-center gap-2 bg-gold/15 hover:bg-gold/25 border border-gold/40 hover:border-gold/60 text-gold font-semibold text-sm px-4 py-2 rounded-full transition-all duration-200 backdrop-blur-sm">
