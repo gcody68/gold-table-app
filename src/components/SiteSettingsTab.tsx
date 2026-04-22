@@ -322,27 +322,82 @@ export default function SiteSettingsTab({ settings, menuItemCount = 0 }: Props) 
         {saving ? "Saving..." : "Save Domain Settings"}
       </Button>
 
-      <div className="space-y-4">
+      {/* DNS Configuration */}
+      <div className="space-y-6">
         <div className="flex items-center gap-2">
           <Server className="w-4 h-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-foreground">Domain Configuration</h3>
+          <h3 className="text-sm font-semibold text-foreground">DNS Configuration</h3>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Add these two DNS records at your domain registrar (e.g. Wix, GoDaddy, Namecheap, Cloudflare).
-          Changes can take up to 48 hours to propagate.
-        </p>
 
+        {/* Free subdomain — always shown */}
         <div className="space-y-3">
-          <DnsRow type="A" host="@" value={VERCEL_IP} />
-          <DnsRow type="CNAME" host="www" value={VERCEL_CNAME} />
+          <div>
+            <p className="text-xs font-semibold text-foreground">Free Subdomain</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Your free <code className="font-mono">.{SUBDOMAIN_HOST}</code> address is handled automatically — no DNS changes needed.
+              It becomes active once your subdomain is saved above.
+            </p>
+          </div>
+          {subdomain && (
+            <div className="rounded-lg border border-border bg-secondary/30 p-3 flex items-center justify-between gap-2">
+              <code className="font-mono text-xs text-foreground">https://{subdomain}.{SUBDOMAIN_HOST}</code>
+              <CopyButton value={`https://${subdomain}.${SUBDOMAIN_HOST}`} />
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-border" />
+
+        {/* Custom domain DNS records — contextual */}
+        <div className="space-y-3">
+          <div>
+            <p className="text-xs font-semibold text-foreground">Custom Domain DNS Records</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {customDomain.trim()
+                ? <>Point <code className="font-mono">{customDomain.trim()}</code> to Gilded Table by adding these records at your domain registrar.</>
+                : "Enter a custom domain above to see the exact DNS records to add at your registrar."}
+            </p>
+          </div>
+
+          {customDomain.trim() ? (() => {
+            const domain = customDomain.trim();
+            // Determine host label: strip leading "www." for the A record host
+            const isWww = domain.startsWith("www.");
+            const isSubdomain = domain.split(".").length > 2; // e.g. menu.joesdiner.com
+            return (
+              <div className="space-y-3">
+                {isWww || !isSubdomain ? (
+                  // Root / www domain: needs A record for root + CNAME for www
+                  <>
+                    <DnsRow type="A" host="@" value={VERCEL_IP} />
+                    <DnsRow type="CNAME" host="www" value={VERCEL_CNAME} />
+                  </>
+                ) : (
+                  // Subdomain (e.g. menu.joesdiner.com): just a CNAME for that subdomain
+                  <DnsRow
+                    type="CNAME"
+                    host={domain.split(".")[0]}
+                    value={VERCEL_CNAME}
+                  />
+                )}
+              </div>
+            );
+          })() : (
+            <div className="rounded-lg border border-dashed border-border p-4 text-center">
+              <Globe className="w-6 h-6 text-muted-foreground/30 mx-auto mb-1.5" />
+              <p className="text-xs text-muted-foreground">DNS records will appear here once you enter a custom domain.</p>
+            </div>
+          )}
         </div>
 
         <div className="rounded-lg bg-amber-500/10 border border-amber-500/25 p-3 space-y-1">
           <p className="text-xs font-semibold text-amber-400">Tips for your DNS provider</p>
           <ul className="text-xs text-amber-400/80 space-y-0.5 list-disc list-inside">
             <li>Set <strong>TTL</strong> to <code className="font-mono">Auto</code> or <code className="font-mono">3600</code></li>
-            <li>Disable any proxy (e.g. Cloudflare orange cloud) until verified</li>
-            <li>In Wix, go to <strong>Domains → DNS Records</strong> to add these</li>
+            <li>Disable any proxy (e.g. Cloudflare orange cloud) until DNS is verified</li>
+            <li>In Wix: <strong>Domains → DNS Records</strong></li>
+            <li>In GoDaddy: <strong>DNS → Manage Zones</strong></li>
+            <li>Changes can take up to 48 hours to propagate</li>
           </ul>
         </div>
 
@@ -353,7 +408,7 @@ export default function SiteSettingsTab({ settings, menuItemCount = 0 }: Props) 
           className="inline-flex items-center gap-1.5 text-xs text-gold hover:text-gold/80 transition-colors"
         >
           <ExternalLink className="w-3.5 h-3.5" />
-          Check if your DNS changes have propagated at dnschecker.org
+          Check DNS propagation at dnschecker.org
         </a>
       </div>
     </div>

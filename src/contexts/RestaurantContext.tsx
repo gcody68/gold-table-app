@@ -10,12 +10,35 @@ export type RestaurantResolution =
   | { status: "found"; restaurantId: string }
   | { status: "root" }; // bare domain with no subdomain — show landing
 
-function resolveHostnameSlug(): string | null {
+type HostResolution =
+  | { type: "subdomain"; slug: string }
+  | { type: "custom_domain"; hostname: string }
+  | { type: "none" };
+
+function resolveHost(): HostResolution {
   const hostname = window.location.hostname;
+
+  // Our own subdomain: *.gildedtable.com
   if (hostname.endsWith(`.${SUBDOMAIN_HOST}`)) {
-    return hostname.slice(0, -(SUBDOMAIN_HOST.length + 1));
+    const slug = hostname.slice(0, -(SUBDOMAIN_HOST.length + 1));
+    return { type: "subdomain", slug };
   }
-  return null;
+
+  // Root domain — show landing
+  if (hostname === SUBDOMAIN_HOST) {
+    return { type: "none" };
+  }
+
+  // Non-production hosts: localhost, *.vercel.app, *.bolt.new, *.lovable.app, etc.
+  // These are dev/preview environments — don't attempt custom domain lookup.
+  const devPatterns = ["localhost", "127.0.0.1", ".vercel.app", ".bolt.new", ".lovable.app", ".lovableproject.com"];
+  const isDevHost = devPatterns.some((p) => hostname === p || hostname.endsWith(p));
+  if (isDevHost) {
+    return { type: "none" };
+  }
+
+  // Anything else is treated as a customer's custom domain (e.g. menu.joesdiner.com)
+  return { type: "custom_domain", hostname };
 }
 
 // ?test_res_id=UUID — injected by the Admin "Open My Shop" button for test mode
@@ -38,37 +61,51 @@ const RestaurantContext = createContext<RestaurantContextType>({
 });
 
 export function RestaurantProvider({ children }: { children: ReactNode }) {
-  const slug = resolveHostnameSlug();
+  const hostResolution = resolveHost();
   const testParamId = resolveTestParamId();
 
+  const queryKey =
+    hostResolution.type === "subdomain"
+      ? ["restaurant-resolution", "subdomain", hostResolution.slug]
+      : hostResolution.type === "custom_domain"
+        ? ["restaurant-resolution", "custom_domain", hostResolution.hostname]
+        : ["restaurant-resolution", "none", testParamId ?? ""];
+
   const { data: resolution, isLoading } = useQuery({
-    queryKey: ["restaurant-resolution", slug, testParamId],
+    queryKey,
     queryFn: async (): Promise<RestaurantResolution> => {
-      // 1. ?test_res_id param — highest priority, set by Admin "Open My Shop" button
+      // 1. ?test_res_id param — highest priority
       if (testParamId) {
         return { status: "found", restaurantId: testParamId };
       }
 
-      // 2. Subdomain routing (production)
-      if (slug !== null) {
-        const isLikelySubdomain = !slug.includes(".");
-        const col = isLikelySubdomain ? "subdomain" : "custom_domain";
+      // 2a. Subdomain routing — *.gildedtable.com
+      if (hostResolution.type === "subdomain") {
         const { data, error } = await supabase
           .from("restaurant_settings")
           .select("id")
-          .eq(col, slug)
+          .eq("subdomain", hostResolution.slug)
           .maybeSingle();
         if (error || !data) return { status: "not-found" };
         return { status: "found", restaurantId: data.id };
       }
 
-      // 3. Env var override (Bolt/Vercel static previews with VITE_RESTAURANT_ID set)
+      // 2b. Custom domain routing — any other hostname
+      if (hostResolution.type === "custom_domain") {
+        const { data, error } = await supabase
+          .from("restaurant_settings")
+          .select("id")
+          .eq("custom_domain", hostResolution.hostname)
+          .maybeSingle();
+        if (error || !data) return { status: "not-found" };
+        return { status: "found", restaurantId: data.id };
+      }
+
+      // 3. Env var override (Vercel static preview with VITE_RESTAURANT_ID set)
       const fallbackId = import.meta.env.VITE_RESTAURANT_ID;
       if (fallbackId) return { status: "found", restaurantId: fallbackId };
 
-      // 4. Session-first: resolve via the logged-in user's own restaurant so that
-      //    testing on a bare domain (localhost, preview URL) always routes to the
-      //    correct kitchen without needing a subdomain or env var.
+      // 4. Session-first: logged-in owner's own restaurant
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.id) {
         const isSuperAdmin = session.user.app_metadata?.super_admin === true;
