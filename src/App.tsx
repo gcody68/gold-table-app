@@ -46,16 +46,10 @@ function RootRoute() {
   // Valid subdomain/domain → show the restaurant menu
   if (resolution.status === "found") return <Index />;
 
-  // Subdomain in URL but no matching restaurant
-  return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 text-center px-4">
-      <p className="text-4xl">🍽️</p>
-      <h1 className="text-2xl font-serif font-bold text-foreground">Restaurant Not Found</h1>
-      <p className="text-muted-foreground text-sm max-w-xs">
-        This address doesn't match any restaurant in our system. Double-check the URL or contact the restaurant for their correct link.
-      </p>
-    </div>
-  );
+  // Hostname didn't match any restaurant — logged-in owner goes to dashboard,
+  // unauthenticated visitor sees the landing page.
+  if (session) return <Navigate to="/dashboard" replace />;
+  return <Landing />;
 }
 
 const App = () => (

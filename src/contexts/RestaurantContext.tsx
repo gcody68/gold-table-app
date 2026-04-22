@@ -92,13 +92,16 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
 
       // 2b. Custom domain routing — any other hostname
       if (hostResolution.type === "custom_domain") {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("restaurant_settings")
           .select("id")
           .eq("custom_domain", hostResolution.hostname)
           .maybeSingle();
-        if (error || !data) return { status: "not-found" };
-        return { status: "found", restaurantId: data.id };
+        // Only hard-404 if we got a DB hit that still returned nothing AND there's
+        // no logged-in session to fall back to. Otherwise continue to fallbacks below.
+        if (data?.id) return { status: "found", restaurantId: data.id };
+        // Fall through to session/env fallbacks — the user may be an owner visiting
+        // their deployment URL before DNS is wired up.
       }
 
       // 3. Env var override (Vercel static preview with VITE_RESTAURANT_ID set)
